@@ -1,0 +1,150 @@
+import { test, expect } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
+const origin = process.env.APP_ORIGIN ?? "http://localhost:3000";
+const pages = [
+  "dashboard",
+  "portfolio",
+  "history",
+  "scenarios",
+  "scenarios/new",
+  "settings",
+];
+for (const theme of ["light", "dark"]) {
+  for (const width of [320, 390, 1440]) {
+    test(`UI audit ${theme} ${width}px`, async ({ page }) => {
+      test.setTimeout(120000);
+      const response = await page.request.post("/api/login", {
+        headers: { Origin: origin },
+        data: {
+          username: process.env.SEED_USERNAME ?? "admin",
+          password: process.env.SEED_PASSWORD,
+        },
+      });
+      expect(response.ok()).toBeTruthy();
+      const state = await (await page.request.get("/api/state")).json();
+      const settings = {
+        ...state.user,
+        telegramChatId: state.user.telegramChatId ?? "",
+      };
+      await page.request.post("/api/settings", {
+        headers: { Origin: origin },
+        data: { ...settings, language: "en", theme },
+      });
+      try {
+        await page.setViewportSize({ width, height: 900 });
+        for (const route of pages) {
+          await page.goto(`/${route}`);
+          await expect(page.locator("html")).toHaveAttribute(
+            "data-theme",
+            theme,
+          );
+          await expect(page.locator("main h1")).toBeVisible();
+          await expect(page.locator("main")).toHaveAttribute(
+            "aria-busy",
+            "false",
+          );
+          expect(
+            await page.evaluate(() => document.documentElement.scrollWidth),
+            route,
+          ).toBeLessThanOrEqual(width);
+          const results = await new AxeBuilder({ page })
+            .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+            .analyze();
+          expect(
+            results.violations.map((v) => ({
+              id: v.id,
+              impact: v.impact,
+              nodes: v.nodes.map((n) => n.target),
+            })),
+            route,
+          ).toEqual([]);
+          await page.screenshot({
+            path: `test-results/ui-${theme}-${width}-${route.replaceAll("/", "-")}.png`,
+            fullPage: true,
+          });
+        }
+      } finally {
+        await page.request.post("/api/settings", {
+          headers: { Origin: origin },
+          data: settings,
+        });
+      }
+    });
+  }
+}
+test("mobile navigation traps focus, closes with Escape and Settings", async ({
+  page,
+}) => {
+  await page.request.post("/api/login", {
+    headers: { Origin: origin },
+    data: {
+      username: process.env.SEED_USERNAME ?? "admin",
+      password: process.env.SEED_PASSWORD,
+    },
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/dashboard");
+  const menu = page.locator(".mobile-menu");
+  await expect(menu).toHaveAttribute("aria-expanded", "false");
+  await expect(page.locator(".sidebar")).toHaveAttribute("inert", "");
+  await menu.click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page
+    .getByRole("dialog")
+    .getByRole("link", { name: /Settings|Sozlamalar/, exact: true })
+    .click();
+  await expect(page).toHaveURL(/settings$/);
+  await expect(menu).toHaveAttribute("aria-expanded", "false");
+  await menu.click();
+  await page.keyboard.press("Shift+Tab");
+  expect(
+    await page.evaluate(() => !!document.activeElement?.closest(".sidebar")),
+  ).toBeTruthy();
+  await page.keyboard.press("Escape");
+  await expect(menu).toBeFocused();
+});
+test("expanded history fits mobile, charts resize, drawer errors are visible", async ({
+  page,
+}) => {
+  await page.request.post("/api/login", {
+    headers: { Origin: origin },
+    data: {
+      username: process.env.SEED_USERNAME ?? "admin",
+      password: process.env.SEED_PASSWORD,
+    },
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/history");
+  await page.getByRole("cell", { name: "TSLA", exact: true }).click();
+  await expect(page.locator(".trade-details textarea")).toBeVisible();
+  const details = await page.locator(".trade-details").boundingBox();
+  expect(details!.x + details!.width).toBeLessThanOrEqual(390);
+  const chart = await page.locator(".candles canvas").first().boundingBox();
+  expect(chart!.width).toBeLessThanOrEqual(details!.width);
+  const result = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+    .analyze();
+  expect(result.violations.map((v) => v.id)).toEqual([]);
+  await page.screenshot({
+    path: "test-results/history-mobile-expanded.png",
+    fullPage: true,
+  });
+  await page.goto("/portfolio");
+  await page.getByRole("cell", { name: "NVDA NVIDIA Corp." }).click();
+  await page.route("**/api/position/stop", (route) =>
+    route.fulfill({
+      status: 400,
+      contentType: "application/json",
+      body: JSON.stringify({ error: "Stop validation failed" }),
+    }),
+  );
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: /Save|Saqlash/, exact: true })
+    .click();
+  await expect(page.getByRole("dialog").getByRole("alert")).toHaveText(
+    "Stop validation failed",
+  );
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});

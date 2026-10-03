@@ -1,5 +1,6 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -15,7 +16,9 @@ import {
 } from "lucide-react";
 import { en, uz, type Key } from "@/i18n/dictionaries";
 import type { State } from "./types";
-import { EquityChart } from "./Charts";
+const EquityChart = dynamic(() =>
+  import("./Charts").then((m) => m.EquityChart),
+);
 import { Portfolio, HistoryPage } from "./Positions";
 import { Scenarios, ScenarioEditor } from "./Scenarios";
 import { SettingsPage } from "./Settings";
@@ -64,7 +67,9 @@ export default function Platform({ route }: { route: string }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [drawer, setDrawer] = useState(false);
-  const [clock, setClock] = useState(new Date());
+  const [mobile, setMobile] = useState(false);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const menuRef = useRef<HTMLButtonElement>(null);
   const [busy, setBusy] = useState(false);
   const reload = useCallback(async () => {
     const r = await fetch("/api/state", { cache: "no-store" });
@@ -78,12 +83,56 @@ export default function Platform({ route }: { route: string }) {
   useEffect(() => {
     reload().catch((e) => setError(String(e)));
     const timer = setInterval(() => reload().catch(() => {}), 30000);
-    const ticker = setInterval(() => setClock(new Date()), 1000);
     return () => {
       clearInterval(timer);
-      clearInterval(ticker);
     };
   }, [reload]);
+  useEffect(() => {
+    const media = matchMedia("(max-width: 600px)");
+    const update = () => {
+      setMobile(media.matches);
+      if (!media.matches) setDrawer(false);
+    };
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+  useEffect(() => {
+    if (!drawer || !mobile) return;
+    const sidebar = sidebarRef.current;
+    const menuButton = menuRef.current;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    sidebar?.querySelector<HTMLElement>("button, a")?.focus();
+    const keydown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setDrawer(false);
+      }
+      if (e.key !== "Tab" || !sidebar) return;
+      const items = Array.from(
+        sidebar.querySelectorAll<HTMLElement>("a, button, select"),
+      ).filter(
+        (el) => el.getClientRects().length && !el.hasAttribute("disabled"),
+      );
+      const first = items[0],
+        last = items.at(-1);
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last?.focus();
+      }
+      if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first?.focus();
+      }
+    };
+    document.addEventListener("keydown", keydown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", keydown);
+      menuButton?.focus();
+    };
+  }, [drawer, mobile]);
   const t: T = (key) => (data?.user.language === "en" ? en : uz)[key];
   useEffect(() => {
     if (!data) return;
@@ -135,27 +184,47 @@ export default function Platform({ route }: { route: string }) {
     <div
       className={`shell ${data.user.collapsed ? "collapsed" : ""} ${drawer ? "drawer-open" : ""}`}
     >
-      <aside className="sidebar">
+      <a className="skip-link" href="#main-content">
+        {t("skipContent")}
+      </a>
+      <aside
+        className="sidebar"
+        ref={sidebarRef}
+        inert={mobile && !drawer}
+        role={mobile && drawer ? "dialog" : undefined}
+        aria-modal={mobile && drawer ? true : undefined}
+        aria-label={t("navigation")}
+        id="navigation"
+      >
         <Link href="/dashboard" className="brand">
           <span className="logo">e</span>
           <strong>ERTA</strong>
         </Link>
         <button
           className="collapse"
-          aria-label="Toggle menu"
+          aria-label={t("toggleMenu")}
           onClick={() =>
             preferences({ collapsed: !data.user.collapsed }).catch(() => {})
           }
         >
           <PanelLeftClose size={18} />
         </button>
-        <nav>
+        <button
+          className="mobile-close"
+          aria-label={t("close")}
+          onClick={() => setDrawer(false)}
+        >
+          ×
+        </button>
+        <nav aria-label={t("navigation")}>
           {nav.map(({ key, icon: Icon }) => (
             <Link
               key={key}
               href={`/${key}`}
               onClick={() => setDrawer(false)}
               title={t(key)}
+              aria-label={t(key)}
+              aria-current={section === key ? "page" : undefined}
               className={section === key ? "selected" : ""}
             >
               <Icon size={19} />
@@ -167,6 +236,9 @@ export default function Platform({ route }: { route: string }) {
           <Link
             href="/settings"
             title={t("settings")}
+            aria-label={t("settings")}
+            aria-current={section === "settings" ? "page" : undefined}
+            onClick={() => setDrawer(false)}
             className={section === "settings" ? "selected" : ""}
           >
             <Settings size={19} />
@@ -211,36 +283,46 @@ export default function Platform({ route }: { route: string }) {
           onClick={() => setDrawer(false)}
         />
       )}
-      <main className="content" aria-busy={busy}>
+      <main
+        className="content"
+        id="main-content"
+        tabIndex={-1}
+        aria-busy={busy}
+        inert={mobile && drawer}
+      >
         <header>
           <button
             className="mobile-menu"
-            aria-label="Menu"
+            ref={menuRef}
+            aria-label={t("navigation")}
+            aria-expanded={drawer}
+            aria-controls="navigation"
             onClick={() => setDrawer(!drawer)}
           >
             <Menu />
           </button>
           <h1>{t(section)}</h1>
-          <div className="broker-context">
-            <span
-              className={`dot ${account?.connected && !data.stale ? "connected" : ""}`}
-            />
-            {account
-              ? `IBKR · ${account.brokerId} · ${clock.toLocaleTimeString("en-US", { timeZone: account.timezone, hour12: false })} ET`
-              : t("disconnected")}
-            {data.demo && <span className="demo-tag">DEMO</span>}
-          </div>
+          <BrokerContext
+            account={account}
+            stale={data.stale}
+            demo={data.demo}
+            t={t}
+          />
         </header>
         {error && (
           <div className="banner error" role="alert">
             {error}
-            <button onClick={() => setError("")}>×</button>
+            <button aria-label={t("close")} onClick={() => setError("")}>
+              ×
+            </button>
           </div>
         )}
         {notice && (
           <div className="banner success" role="status">
             {notice}
-            <button onClick={() => setNotice("")}>×</button>
+            <button aria-label={t("close")} onClick={() => setNotice("")}>
+              ×
+            </button>
           </div>
         )}
         {data.stale && (
@@ -262,6 +344,7 @@ export default function Platform({ route }: { route: string }) {
         )}
         {route.startsWith("scenarios/") && (
           <ScenarioEditor
+            key={route}
             data={data}
             t={t}
             action={action}
@@ -272,6 +355,34 @@ export default function Platform({ route }: { route: string }) {
           <SettingsPage data={data} t={t} action={action} />
         )}
       </main>
+    </div>
+  );
+}
+function BrokerContext({
+  account,
+  stale,
+  demo,
+  t,
+}: {
+  account: State["account"];
+  stale: boolean;
+  demo: boolean;
+  t: T;
+}) {
+  const [clock, setClock] = useState(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setClock(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  return (
+    <div className="broker-context">
+      <span
+        className={`dot ${account?.connected && !stale ? "connected" : ""}`}
+      />
+      {account
+        ? `IBKR · ${account.brokerId} · ${clock.toLocaleTimeString("en-US", { timeZone: account.timezone, hour12: false })} ${new Intl.DateTimeFormat("en-US", { timeZone: account.timezone, timeZoneName: "short" }).formatToParts(clock).find((p) => p.type === "timeZoneName")?.value ?? ""}`
+        : t("disconnected")}
+      {demo && <span className="demo-tag">DEMO</span>}
     </div>
   );
 }

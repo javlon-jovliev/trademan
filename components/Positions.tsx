@@ -6,7 +6,8 @@ import type { ColumnDef } from "@tanstack/react-table";
 import type { State, TradeDTO } from "./types";
 import { type T, type Action, money, percent, Badge, Metric } from "./Platform";
 import { DataTable } from "./DataTable";
-import { Candles } from "./Charts";
+import dynamic from "next/dynamic";
+const Candles = dynamic(() => import("./Candles").then((m) => m.Candles));
 import { postExit } from "@/risk/engine";
 type Row = NonNullable<State["risk"]>["rows"][number];
 export function Portfolio({
@@ -27,6 +28,8 @@ export function Portfolio({
   const [violations, setViolations] = useState(false);
   const [min, setMin] = useState("");
   const [max, setMax] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [saving, setSaving] = useState(false);
   const [selected, setSelected] = useState<Row | null>(null);
   const risk = data.risk;
   const currency = data.account?.currency;
@@ -162,7 +165,7 @@ export function Portfolio({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          <button onClick={() => setFilters(!filters)}>
+          <button aria-expanded={filters} onClick={() => setFilters(!filters)}>
             {t("filters")}{" "}
             {[side, sector, asset, profit, min, max, violations].filter(Boolean)
               .length || ""}
@@ -252,7 +255,15 @@ export function Portfolio({
             </button>
           </div>
         )}
-        <DataTable data={rows} columns={columns} onRow={setSelected} />
+        <DataTable
+          data={rows}
+          columns={columns}
+          t={t}
+          onRow={(row) => {
+            setSaveError("");
+            setSelected(row);
+          }}
+        />
         {!rows.length && <p className="empty">{t("noData")}</p>}
       </section>
       {selected && (
@@ -301,13 +312,18 @@ export function Portfolio({
                 onSubmit={async (e) => {
                   e.preventDefault();
                   const value = new FormData(e.currentTarget).get("stop");
+                  setSaving(true);
+                  setSaveError("");
                   await action("position/stop", {
                     id: selected.id,
                     riskStop: value ? Number(value) : null,
                     sector: new FormData(e.currentTarget).get("sector"),
                   })
                     .then(() => setSelected(null))
-                    .catch(() => {});
+                    .catch((e) =>
+                      setSaveError(e instanceof Error ? e.message : String(e)),
+                    )
+                    .finally(() => setSaving(false));
                 }}
               >
                 <label>
@@ -329,7 +345,14 @@ export function Portfolio({
                     maxLength={60}
                   />
                 </label>
-                <button className="primary">{t("save")}</button>
+                {saveError && (
+                  <p className="negative" role="alert">
+                    {saveError}
+                  </p>
+                )}
+                <button className="primary" disabled={saving}>
+                  {t(saving ? "loading" : "save")}
+                </button>
               </form>
             </Dialog.Content>
           </Dialog.Portal>
@@ -412,7 +435,9 @@ export function HistoryPage({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <button onClick={() => setFilters(!filters)}>{t("filters")}</button>
+        <button aria-expanded={filters} onClick={() => setFilters(!filters)}>
+          {t("filters")}
+        </button>
         <button onClick={() => exportCSV(rows, "history.csv")}>
           {t("export")}
         </button>
@@ -424,7 +449,18 @@ export function HistoryPage({
             <select value={reason} onChange={(e) => setReason(e.target.value)}>
               <option value="">—</option>
               {["stop_loss", "take_profit", "manual", "unknown"].map((r) => (
-                <option key={r}>{r}</option>
+                <option key={r} value={r}>
+                  {t(
+                    (
+                      {
+                        stop_loss: "stopLoss",
+                        take_profit: "takeProfit",
+                        manual: "manual",
+                        unknown: "unclassified",
+                      } as const
+                    )[r as "stop_loss" | "take_profit" | "manual" | "unknown"],
+                  )}
+                </option>
               ))}
             </select>
           </label>
@@ -458,6 +494,7 @@ export function HistoryPage({
       <DataTable
         data={rows}
         columns={columns}
+        t={t}
         onRow={(r) => setExpanded(expanded === r.id ? "" : r.id)}
         expanded={(r) =>
           expanded === r.id ? (
@@ -504,6 +541,8 @@ function TradeDetails({
           bars={trade.bars}
           entry={trade.openedAt}
           exit={trade.closedAt}
+          entryLabel={t("entry")}
+          exitLabel={t("exit")}
         />
       )}
       <form

@@ -160,6 +160,7 @@ export function ScenarioEditor({
   const [form, setForm] = useState({ ...defaults, ...existing });
   const [tab, setTab] = useState<Key>("basic");
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
   const [sectorText, setSectorText] = useState(
     formatLimits(existing?.sectorLimits),
   );
@@ -193,6 +194,8 @@ export function ScenarioEditor({
       className="panel scenario-editor"
       onSubmit={async (e) => {
         e.preventDefault();
+        setSaving(true);
+        setError("");
         try {
           const parsed = scenarioSchema.parse({
             ...form,
@@ -203,6 +206,8 @@ export function ScenarioEditor({
           router.push("/scenarios");
         } catch (e) {
           setError(e instanceof Error ? e.message : String(e));
+        } finally {
+          setSaving(false);
         }
       }}
     >
@@ -210,7 +215,9 @@ export function ScenarioEditor({
         <h2>{existing?.name ?? t("newScenario")}</h2>
         <div className="row-actions">
           <Link href="/scenarios">{t("cancel")}</Link>
-          <button className="primary">{t("save")}</button>
+          <button className="primary" disabled={saving}>
+            {t(saving ? "loading" : "save")}
+          </button>
         </div>
       </div>
       <div className="tabs">
@@ -226,6 +233,7 @@ export function ScenarioEditor({
           <button
             type="button"
             key={k}
+            aria-pressed={tab === k}
             className={tab === k ? "active" : ""}
             onClick={() => setTab(k)}
           >

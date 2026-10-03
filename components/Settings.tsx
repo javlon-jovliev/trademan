@@ -23,6 +23,7 @@ export function SettingsPage({
         {(["accountTab", "connections", "notifications"] as Key[]).map((k) => (
           <button
             key={k}
+            aria-pressed={tab === k}
             className={tab === k ? "active" : ""}
             onClick={() => setTab(k)}
           >

@@ -17,7 +17,8 @@
     "local:db": "tsx scripts/local-db.ts",
     "local:pglite": "tsx --env-file=.env scripts/pglite-db.ts",
     "test:api": "playwright test tests/e2e/api.spec.ts",
-    "format": "prettier --write app components server broker risk notifications i18n scripts tests"
+    "format": "prettier --write app components server broker risk notifications i18n scripts tests",
+    "audit:performance": "node scripts/ui-performance.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.0",
@@ -37,6 +38,7 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@electric-sql/pglite": "^0.5.8",
     "@electric-sql/pglite-socket": "^0.2.11",
     "@playwright/test": "^1.56.0",
@@ -46,6 +48,7 @@
     "embedded-postgres": "^18.0.0-beta.15",
     "eslint": "^9.0.0",
     "eslint-config-next": "^16.0.0",
+    "lighthouse": "^13.5.0",
     "prettier": "^3.9.9",
     "prisma": "6.19.0",
     "tsx": "^4.20.0",

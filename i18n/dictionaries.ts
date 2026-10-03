@@ -1,4 +1,10 @@
 export const en = {
+  skipContent: "Skip to content",
+  navigation: "Navigation",
+  toggleMenu: "Collapse or expand navigation",
+  previousPage: "Previous page",
+  nextPage: "Next page",
+  tableHint: "Scroll horizontally for more columns. Select a row for details.",
   dashboard: "Dashboard",
   portfolio: "Portfolio",
   scenarios: "Scenarios",
@@ -159,6 +165,13 @@ export const en = {
 export type Key = keyof typeof en;
 export const uz: Record<Key, string> = {
   ...en,
+  skipContent: "Asosiy tarkibga o‘tish",
+  navigation: "Navigatsiya",
+  toggleMenu: "Menyuni yig‘ish yoki kengaytirish",
+  previousPage: "Oldingi sahifa",
+  nextPage: "Keyingi sahifa",
+  tableHint:
+    "Boshqa ustunlar uchun yon tomonga suring. Tafsilotlar uchun qatorni tanlang.",
   dashboard: "Bosh sahifa",
   portfolio: "Portfel",
   scenarios: "Senariylar",

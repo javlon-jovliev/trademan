@@ -6,7 +6,8 @@
   --muted: #64748b;
   --border: #e2e8f0;
   --blue: #2563eb;
-  --green: #16a34a;
+  --link: #2563eb;
+  --green: #166534;
   --red: #dc2626;
   color-scheme: light;
 }
@@ -17,6 +18,7 @@ html[data-theme="dark"] {
   --text: #e2e8f0;
   --muted: #94a3b8;
   --border: #28364b;
+  --link: #93c5fd;
   --green: #4ade80;
   --red: #f87171;
   color-scheme: dark;
@@ -35,7 +37,7 @@ body {
   font-variant-numeric: tabular-nums;
 }
 a {
-  color: var(--blue);
+  color: var(--link);
   text-decoration: none;
 }
 button,
@@ -360,11 +362,11 @@ h3 {
   background: #16a34a14;
 }
 .badge.active {
-  color: #2563eb;
+  color: var(--link);
   background: #2563eb14;
 }
 .badge.warning {
-  color: #b7790a;
+  color: #92400e;
   background: #f59e0b14;
 }
 .badge.breach {
@@ -454,7 +456,7 @@ dd {
   font-size: 13px;
 }
 .tabs .active {
-  color: var(--blue);
+  color: var(--link);
   border-bottom: 2px solid var(--blue);
 }
 .table-panel {
@@ -498,20 +500,19 @@ dd {
   overflow: auto;
   max-height: 75vh;
 }
-table {
+.table-scroll > table {
   border-collapse: collapse;
   width: 100%;
   min-width: 860px;
   font-size: 13px;
 }
-th,
-td {
+.table-scroll > table > :is(thead, tbody) > tr > :is(th, td) {
   padding: 12px 16px;
   text-align: right;
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
-th {
+.table-scroll > table > thead > tr > th {
   font-size: 12px;
   font-weight: 600;
   background: var(--soft);
@@ -521,7 +522,7 @@ th {
   height: 40px;
   color: var(--muted);
 }
-th button {
+.table-scroll > table > thead > tr > th button {
   font-size: 12px;
   border: 0;
   background: transparent;
@@ -530,25 +531,24 @@ th button {
   display: inline;
   color: inherit;
 }
-th:first-child,
-td:first-child {
+.table-scroll > table > :is(thead, tbody) > tr > :is(th, td):first-child {
   text-align: left;
   position: sticky;
   left: 0;
   background: var(--surface);
   z-index: 1;
 }
-th:first-child {
+.table-scroll > table > thead > tr > th:first-child {
   background: var(--soft);
   z-index: 2;
 }
-tbody tr:hover td {
+.table-scroll > table > tbody > tr:hover > td {
   background: var(--soft);
 }
-tbody tr[tabindex] {
+.table-scroll > table > tbody > tr[tabindex] {
   cursor: pointer;
 }
-td small {
+.table-scroll > table > tbody > tr > td small {
   font-size: 11px;
   max-width: 190px;
   overflow: hidden;
@@ -971,4 +971,164 @@ td small {
 .row-menu .row-actions a {
   padding: 6px 9px;
   font-size: 12px;
+}
+
+/* Audit: keep chart internals independent of portfolio table rules. */
+html[data-theme="dark"] .badge.warning {
+  color: #fbbf24;
+}
+.skip-link {
+  position: fixed;
+  top: -80px;
+  left: 12px;
+  z-index: 50;
+  padding: 12px 18px;
+  background: var(--surface);
+  border: 2px solid var(--link);
+  border-radius: 8px;
+}
+.skip-link:focus {
+  top: 12px;
+}
+.mobile-close {
+  display: none;
+}
+.sidebar {
+  overflow-y: auto;
+}
+.brand {
+  flex-shrink: 0;
+}
+.brand .logo {
+  flex-shrink: 0;
+}
+.table-hint {
+  margin: 0;
+  padding: 0 20px 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.table-scroll:focus-visible,
+summary:focus-visible,
+tbody tr:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: -2px;
+}
+.trade-details {
+  width: min(760px, calc(100vw - 320px));
+}
+.trade-details .summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.trade-details textarea {
+  width: 100%;
+}
+.trade-details .metric > strong {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.candles {
+  width: 100%;
+  min-width: 0;
+}
+.row-menu summary::-webkit-details-marker {
+  display: none;
+}
+.panel,
+.dashboard-bottom > section {
+  min-width: 0;
+}
+.metric > strong {
+  letter-spacing: -0.03em;
+}
+.exposure > div:first-child {
+  gap: 12px;
+}
+.exposure span:first-child {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 900px) {
+  .trade-details {
+    width: min(760px, calc(100vw - 160px));
+  }
+}
+@media (max-width: 600px) {
+  .mobile-close {
+    display: flex;
+    position: absolute;
+    right: 10px;
+    top: 18px;
+    background: transparent;
+    color: #cbd5e1;
+    border-color: #334155;
+    font-size: 24px;
+  }
+  .sidebar nav {
+    margin-top: 24px;
+  }
+  .content header {
+    justify-content: flex-start;
+  }
+  .content header h1 {
+    flex: 1;
+  }
+  .broker-context {
+    justify-content: flex-start;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+  .metric > strong {
+    font-size: clamp(16px, 5.2vw, 21px);
+  }
+  .table-hint {
+    padding: 0 12px 12px;
+  }
+  .trade-details {
+    width: calc(100vw - 76px);
+  }
+  .trade-details .summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .trade-details .metric strong {
+    font-size: 17px;
+  }
+  .filter-panel {
+    padding: 12px;
+  }
+  .filter-panel label {
+    flex: 1 1 130px;
+    max-width: none;
+  }
+  .settings input[type="file"] {
+    width: 100%;
+  }
+  .banner {
+    gap: 12px;
+    overflow-wrap: anywhere;
+  }
+  .banner button {
+    flex-shrink: 0;
+    min-width: 32px;
+    min-height: 32px;
+  }
+  .row-menu summary {
+    min-height: 44px;
+    min-width: 44px;
+    display: grid;
+    place-items: center;
+  }
+  .tabs {
+    gap: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

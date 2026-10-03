@@ -1,5 +1,6 @@
 "use client";
 /* eslint-disable react-hooks/incompatible-library -- TanStack Table is intentionally not React Compiler memoized. */
+import type { T } from "./Platform";
 import { useState, Fragment } from "react";
 import {
   useReactTable,
@@ -10,12 +11,15 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table";
+type TLabel = T;
 export function DataTable<T>({
   data,
   columns,
   onRow,
   expanded,
+  t,
 }: {
+  t: TLabel;
   data: T[];
   columns: ColumnDef<T>[];
   onRow?: (row: T) => void;
@@ -34,7 +38,13 @@ export function DataTable<T>({
   });
   return (
     <>
-      <div className="table-scroll">
+      <p className="table-hint">{t("tableHint")}</p>
+      <div
+        className="table-scroll"
+        role="region"
+        aria-label={t("tableHint")}
+        tabIndex={0}
+      >
         <table>
           <thead>
             {table.getHeaderGroups().map((g) => (
@@ -50,14 +60,18 @@ export function DataTable<T>({
                           : "none"
                     }
                   >
-                    <button onClick={h.column.getToggleSortingHandler()}>
-                      {flexRender(h.column.columnDef.header, h.getContext())}
-                      {h.column.getIsSorted() === "asc"
-                        ? " ↑"
-                        : h.column.getIsSorted() === "desc"
-                          ? " ↓"
-                          : ""}
-                    </button>
+                    {h.column.getCanSort() ? (
+                      <button onClick={h.column.getToggleSortingHandler()}>
+                        {flexRender(h.column.columnDef.header, h.getContext())}
+                        {h.column.getIsSorted() === "asc"
+                          ? " ↑"
+                          : h.column.getIsSorted() === "desc"
+                            ? " ↓"
+                            : ""}
+                      </button>
+                    ) : (
+                      flexRender(h.column.columnDef.header, h.getContext())
+                    )}
                   </th>
                 ))}
               </tr>
@@ -97,6 +111,7 @@ export function DataTable<T>({
       {table.getPageCount() > 1 && (
         <div className="pagination">
           <button
+            aria-label={t("previousPage")}
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
@@ -106,6 +121,7 @@ export function DataTable<T>({
             {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
           </span>
           <button
+            aria-label={t("nextPage")}
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
