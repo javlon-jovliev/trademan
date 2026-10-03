@@ -57,6 +57,7 @@ export function SettingsPage({
               <label>
                 {t("theme")}
                 <select
+                  aria-label={t("theme")}
                   value={form.theme}
                   onChange={(e) =>
                     setForm({
@@ -75,6 +76,7 @@ export function SettingsPage({
               <label>
                 {t("baseCurrency")}
                 <select
+                  aria-label={t("baseCurrency")}
                   value={form.baseCurrency}
                   onChange={(e) =>
                     setForm({ ...form, baseCurrency: e.target.value })
