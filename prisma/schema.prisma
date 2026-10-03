@@ -1,0 +1,190 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String    @id @default(cuid())
+  username        String    @unique
+  email           String    @unique
+  passwordHash    String
+  language        String    @default("uz")
+  theme           String    @default("light")
+  timezone        String    @default("Asia/Dubai")
+  baseCurrency    String    @default("USD")
+  collapsed       Boolean   @default(false)
+  telegramEnabled Boolean   @default(false)
+  telegramChatId  String?
+  createdAt       DateTime  @default(now())
+  sessions        Session[]
+  accounts        Account[]
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+}
+
+model LoginAttempt {
+  key       String   @id
+  count     Int
+  expiresAt DateTime
+}
+
+model Account {
+  id                String     @id @default(cuid())
+  userId            String
+  user              User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brokerId          String
+  mode              String     @default("demo")
+  currency          String     @default("USD")
+  timezone          String     @default("America/New_York")
+  connected         Boolean    @default(false)
+  syncedAt          DateTime?
+  syncError         String?
+  historyError      String?
+  historySyncedAt   DateTime?
+  activeScenarioId  String?
+  nlv               Float?
+  cash              Float?
+  buyingPower       Float?
+  maintenanceMargin Float?
+  excessLiquidity   Float?
+  positions         Position[]
+  snapshots         Snapshot[]
+  trades            Trade[]
+  scenarios         Scenario[]
+  alerts            Alert[]
+
+  @@unique([userId, brokerId, mode])
+}
+
+model Position {
+  id            String  @id @default(cuid())
+  accountId     String
+  account       Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  conid         String
+  symbol        String
+  name          String
+  quantity      Float
+  averagePrice  Float
+  currentPrice  Float?
+  previousClose Float?
+  multiplier    Float   @default(1)
+  fx            Float?
+  currency      String  @default("USD")
+  assetClass    String  @default("STK")
+  sector        String  @default("Unknown")
+  riskStop      Float?
+
+  @@unique([accountId, conid])
+}
+
+model Snapshot {
+  id           String   @id @default(cuid())
+  accountId    String
+  account      Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  at           DateTime
+  nlv          Float
+  externalFlow Float    @default(0)
+
+  @@unique([accountId, at])
+}
+
+model Scenario {
+  id             String   @id @default(cuid())
+  accountId      String
+  account        Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  name           String
+  description    String   @default("")
+  draft          Boolean  @default(false)
+  maxHeat        Float    @default(6)
+  warningHeat    Float    @default(4.5)
+  maxTradeRisk   Float    @default(1.5)
+  maxPosition    Float    @default(20)
+  maxGross       Float    @default(150)
+  maxNet         Float    @default(100)
+  maxMargin      Float    @default(65)
+  minLiquidity   Float    @default(25)
+  dailyLoss      Float    @default(2)
+  weeklyLoss     Float    @default(4)
+  monthlyLoss    Float    @default(6)
+  totalDrawdown  Float    @default(8)
+  sectorLimit    Float    @default(35)
+  sectorLimits   Json     @default("{}")
+  assetLimits    Json     @default("{}")
+  requireStops   Boolean  @default(true)
+  alertEnabled   Boolean  @default(true)
+  warningPercent Float    @default(80)
+  updatedAt      DateTime @updatedAt
+}
+
+model Trade {
+  id         String   @id @default(cuid())
+  accountId  String
+  account    Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  externalId String
+  conid      String?
+  symbol     String
+  quantity   Float
+  entry      Float
+  exit       Float
+  multiplier Float    @default(1)
+  fx         Float    @default(1)
+  fees       Float    @default(0)
+  openedAt   DateTime
+  closedAt   DateTime
+  reason     String   @default("unknown")
+  bars       Json     @default("[]")
+  notes      String   @default("")
+
+  @@unique([accountId, externalId])
+}
+
+model Alert {
+  id            String    @id @default(cuid())
+  accountId     String
+  account       Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  key           String
+  severity      String
+  message       String
+  active        Boolean   @default(true)
+  acknowledged  Boolean   @default(false)
+  deliveredAt   DateTime?
+  deliveryError String?
+  createdAt     DateTime  @default(now())
+
+  @@index([accountId, key, active])
+}
+
+model Audit {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  detail    String
+  createdAt DateTime @default(now())
+}
+
+model Execution {
+  id         String   @id @default(cuid())
+  accountId  String
+  externalId String
+  conid      String
+  symbol     String
+  quantity   Float
+  price      Float
+  fees       Float
+  multiplier Float
+  fx         Float
+  at         DateTime
+  openClose  String
+
+  @@unique([accountId, externalId])
+  @@index([accountId, conid, at])
+}
