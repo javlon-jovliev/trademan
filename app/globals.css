@@ -1132,3 +1132,9 @@ tbody tr:focus-visible {
     scroll-behavior: auto !important;
   }
 }
+.table-scroll > table > tbody > tr > td.expanded {
+  white-space: normal;
+  text-align: left;
+  padding: 20px;
+  background: var(--soft);
+}

@@ -148,3 +148,45 @@ test("expanded history fits mobile, charts resize, drawer errors are visible", a
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
+test("filters and settings/editor subviews remain accessible", async ({
+  page,
+}) => {
+  test.setTimeout(90000);
+  await page.request.post("/api/login", {
+    headers: { Origin: origin },
+    data: {
+      username: process.env.SEED_USERNAME ?? "admin",
+      password: process.env.SEED_PASSWORD,
+    },
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const route of ["portfolio", "history"]) {
+    await page.goto(`/${route}`);
+    await page.getByRole("button", { name: /Filters|Filtrlar/ }).click();
+    expect(
+      (
+        await new AxeBuilder({ page })
+          .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+          .analyze()
+      ).violations.map((v) => v.id),
+    ).toEqual([]);
+  }
+  for (const route of ["scenarios/new", "settings"]) {
+    await page.goto(`/${route}`);
+    await expect(page.locator(".tabs button").first()).toBeVisible();
+    const tabs = page.locator(".tabs button");
+    for (let i = 0; i < (await tabs.count()); i++) {
+      await tabs.nth(i).click();
+      expect(
+        (
+          await new AxeBuilder({ page })
+            .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+            .analyze()
+        ).violations.map((v) => v.id),
+      ).toEqual([]);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth),
+      ).toBeLessThanOrEqual(390);
+    }
+  }
+});

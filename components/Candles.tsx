@@ -27,6 +27,7 @@ export function Candles({
       height: 250,
       width: ref.current.clientWidth,
       autoSize: true,
+      timeScale: { lockVisibleTimeRangeOnResize: true },
       layout: {
         background: {
           color: getComputedStyle(ref.current)
