@@ -165,8 +165,10 @@ export async function POST(
     }
     if (route === "sessions/revoke") {
       const token = req.cookies.get("erta_session")?.value;
+      if (!token)
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       await db.session.deleteMany({
-        where: { userId: user.id, id: { not: sessionDigest(token ?? "") } },
+        where: { userId: user.id, id: { not: sessionDigest(token) } },
       });
       return NextResponse.json({ ok: true });
     }

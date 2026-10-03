@@ -1,5 +1,13 @@
 "use client";
 import Link from "next/link";
+import * as Dropdown from "@radix-ui/react-dropdown-menu";
+import {
+  MoreHorizontal,
+  Copy,
+  Pencil,
+  Trash2,
+  CircleCheck,
+} from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { State } from "./types";
@@ -23,7 +31,7 @@ export function Scenarios({
         </Link>
       </div>
       <div className="table-scroll">
-        <table>
+        <table className="scenario-table">
           <thead>
             <tr>
               {[
@@ -31,8 +39,6 @@ export function Scenarios({
                 "active",
                 "maxHeat",
                 "maxTradeRisk",
-                "maxPosition",
-                "sectorLimit",
                 "totalDrawdown",
               ].map((k) => (
                 <th key={k}>{t(k as Key)}</th>
@@ -61,55 +67,74 @@ export function Scenarios({
                     t={t}
                   />
                 </td>
-                {[
-                  s.maxHeat,
-                  s.maxTradeRisk,
-                  s.maxPosition,
-                  s.sectorLimit,
-                  s.totalDrawdown,
-                ].map((v, i) => (
+                {[s.maxHeat, s.maxTradeRisk, s.totalDrawdown].map((v, i) => (
                   <td key={i}>{percent(v)}</td>
                 ))}
                 <td>
-                  <details className="row-menu">
-                    <summary aria-label={t("details")}>•••</summary>
-                    <div className="row-actions">
+                  <Dropdown.Root>
+                    <Dropdown.Trigger asChild>
                       <button
-                        onClick={() =>
-                          action("scenario/activate", { id: s.id }).catch(
-                            () => {},
-                          )
-                        }
-                        disabled={
-                          s.draft || s.id === data.account?.activeScenarioId
-                        }
+                        className="icon-button"
+                        aria-label={`${t("details")} · ${s.name}`}
                       >
-                        {t("activate")}
+                        <MoreHorizontal size={18} />
                       </button>
-                      <Link href={`/scenarios/${s.id}`}>{t("edit")}</Link>
-                      <button
-                        onClick={() =>
-                          action("scenario/duplicate", { id: s.id }).catch(
-                            () => {},
-                          )
-                        }
+                    </Dropdown.Trigger>
+                    <Dropdown.Portal>
+                      <Dropdown.Content
+                        className="popover-menu"
+                        align="end"
+                        sideOffset={6}
+                        collisionPadding={12}
                       >
-                        {t("duplicate")}
-                      </button>
-                      <button
-                        className="negative"
-                        disabled={s.id === data.account?.activeScenarioId}
-                        onClick={() => {
-                          if (confirm(t("confirmDelete")))
-                            action("scenario/delete", { id: s.id }).catch(
+                        <Dropdown.Item
+                          className="menu-item"
+                          disabled={
+                            s.draft || s.id === data.account?.activeScenarioId
+                          }
+                          onSelect={() =>
+                            action("scenario/activate", { id: s.id }).catch(
                               () => {},
-                            );
-                        }}
-                      >
-                        {t("remove")}
-                      </button>
-                    </div>
-                  </details>
+                            )
+                          }
+                        >
+                          <CircleCheck size={16} />
+                          {t("activate")}
+                        </Dropdown.Item>
+                        <Dropdown.Item className="menu-item" asChild>
+                          <Link href={`/scenarios/${s.id}`}>
+                            <Pencil size={16} />
+                            {t("edit")}
+                          </Link>
+                        </Dropdown.Item>
+                        <Dropdown.Item
+                          className="menu-item"
+                          onSelect={() =>
+                            action("scenario/duplicate", { id: s.id }).catch(
+                              () => {},
+                            )
+                          }
+                        >
+                          <Copy size={16} />
+                          {t("duplicate")}
+                        </Dropdown.Item>
+                        <Dropdown.Separator className="menu-separator" />
+                        <Dropdown.Item
+                          className="menu-item negative"
+                          disabled={s.id === data.account?.activeScenarioId}
+                          onSelect={() => {
+                            if (confirm(t("confirmDelete")))
+                              action("scenario/delete", { id: s.id }).catch(
+                                () => {},
+                              );
+                          }}
+                        >
+                          <Trash2 size={16} />
+                          {t("remove")}
+                        </Dropdown.Item>
+                      </Dropdown.Content>
+                    </Dropdown.Portal>
+                  </Dropdown.Root>
                 </td>
               </tr>
             ))}

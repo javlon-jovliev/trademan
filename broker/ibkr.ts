@@ -47,6 +47,12 @@ export class IBKRAdapter implements BrokerAdapter {
     if (!r.ok) throw Error(`IBKR HTTP ${r.status}`);
     return r.json();
   }
+  async connectionStatus() {
+    const auth = z
+      .object({ authenticated: z.boolean(), connected: z.boolean() })
+      .parse(await this.get("/iserver/auth/status"));
+    return auth.authenticated && auth.connected;
+  }
   async history(conid: string) {
     if (!/^\d+$/.test(conid)) throw Error("Invalid contract ID");
     const response = z
@@ -74,10 +80,7 @@ export class IBKRAdapter implements BrokerAdapter {
   async snapshot(accountId: string): Promise<BrokerSnapshot> {
     if (!/^[A-Za-z0-9_-]+$/.test(accountId))
       throw Error("Invalid broker account");
-    const auth = z
-      .object({ authenticated: z.boolean(), connected: z.boolean() })
-      .parse(await this.get("/iserver/auth/status"));
-    if (!auth.authenticated || !auth.connected)
+    if (!(await this.connectionStatus()))
       throw Error("Authenticate the IBKR Client Portal Gateway first");
     const accounts = z
       .array(z.object({ accountId: z.string() }))

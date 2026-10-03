@@ -116,11 +116,13 @@ test("expanded history fits mobile, charts resize, drawer errors are visible", a
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/history");
   await page.getByRole("cell", { name: "TSLA", exact: true }).click();
-  await expect(page.locator(".trade-details textarea")).toBeVisible();
+  await expect(page.locator(".trade-details textarea")).toHaveCount(0);
+  await expect(page.locator(".analysis-card")).toHaveCount(3);
   const details = await page.locator(".trade-details").boundingBox();
   expect(details!.x + details!.width).toBeLessThanOrEqual(390);
   const chart = await page.locator(".candles canvas").first().boundingBox();
   expect(chart!.width).toBeLessThanOrEqual(details!.width);
+  expect(chart!.height).toBeGreaterThan(200);
   const result = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
     .analyze();
@@ -188,5 +190,86 @@ test("filters and settings/editor subviews remain accessible", async ({
         await page.evaluate(() => document.documentElement.scrollWidth),
       ).toBeLessThanOrEqual(390);
     }
+  }
+});
+
+test("compact account menu, notification menu and session request failure", async ({
+  page,
+}) => {
+  test.setTimeout(60000);
+  await page.request.post("/api/login", {
+    headers: { Origin: origin },
+    data: {
+      username: process.env.SEED_USERNAME ?? "admin",
+      password: process.env.SEED_PASSWORD,
+    },
+  });
+  const state = await (await page.request.get("/api/state")).json();
+  const prefs = {
+    ...state.user,
+    telegramChatId: state.user.telegramChatId ?? "",
+  };
+  await page.request.post("/api/settings", {
+    headers: { Origin: origin },
+    data: { ...prefs, collapsed: true, language: "en" },
+  });
+  try {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/settings");
+    await page
+      .getByRole("button", { name: "Account menu", exact: true })
+      .click();
+    await expect(
+      page.getByRole("menuitemradio", { name: "English", exact: true }),
+    ).toBeVisible();
+    expect(
+      (
+        await new AxeBuilder({ page })
+          .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+          .analyze()
+      ).violations.map((v) => v.id),
+    ).toEqual([]);
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: /Alerts \(/ }).click();
+    expect(
+      (
+        await new AxeBuilder({ page })
+          .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+          .analyze()
+      ).violations.map((v) => v.id),
+    ).toEqual([]);
+    await expect(page.locator(".notifications-menu")).not.toContainText(
+      /cm[a-z0-9]{20}/,
+    );
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(page.locator(".save-toast")).toContainText("Saved");
+    const toast = await page.locator(".save-toast").boundingBox();
+    expect(toast?.width).toBeLessThan(220);
+    await expect(page.locator(".save-toast")).toHaveCount(0, { timeout: 5000 });
+    await page.route("**/api/sessions/revoke", (route) =>
+      route.abort("failed"),
+    );
+    await page
+      .getByRole("button", { name: "Revoke other sessions", exact: true })
+      .click();
+    await expect(page.locator(".session-action [role=alert]")).toContainText(
+      "Connection failed",
+    );
+    await page.unroute("**/api/sessions/revoke");
+    await page
+      .getByRole("button", { name: "Revoke other sessions", exact: true })
+      .click();
+    await expect(page.locator(".session-action [role=status]")).toContainText(
+      "This session remains active",
+    );
+    await expect(
+      page.getByRole("heading", { name: "Settings", exact: true }),
+    ).toBeVisible();
+  } finally {
+    await page.request.post("/api/settings", {
+      headers: { Origin: origin },
+      data: prefs,
+    });
   }
 });

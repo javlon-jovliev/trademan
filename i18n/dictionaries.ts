@@ -1,4 +1,35 @@
 export const en = {
+  accountMenu: "Account menu",
+  noAlerts: "No unread active alerts.",
+  ackHint: "Select to mark as read",
+  riskDataMissing:
+    "Risk cannot be calculated. Check the stop, market price and FX data.",
+  limitLabel: "limit",
+  nearLimit: "Approaching the limit.",
+  limitExceeded: "The limit has been exceeded.",
+  belowMinimum: "Below the minimum required level.",
+  connected: "Connected",
+  checking: "Checking connection",
+  gatewayStatusHelp: "Gateway status is checked every 30 seconds.",
+  demoConnection: "Demo data — no live broker connection.",
+  sessionsDone: "Other sessions have ended. This session remains active.",
+  networkError: "Connection failed. Check that ERTA is running and try again.",
+  liveSetupTitle: "Connect your IBKR account",
+  liveSetupHelp:
+    "This instance is in demo mode. A live connection needs an authenticated Client Portal Gateway and a separate live database; it cannot be enabled by entering an account ID alone.",
+  liveStep1:
+    "Install and start IBKR Client Portal Gateway on the machine running ERTA. Sign in to the Gateway with your IBKR account and complete two-factor authentication.",
+  liveStep2:
+    "Configure the live ERTA server with the Gateway URL, account ID and trusted TLS certificate. Use a separate database, disable demo mode and start the worker.",
+  liveStep3:
+    "In the live instance, enter your account ID below and select Connect, then Sync. ERTA reads data and does not submit broker orders.",
+  setupDetails: "Server configuration",
+  historyImportHelp:
+    "Optional: import closed trades when Flex history is unavailable or incomplete. This adds entry, exit, quantity, date and closure reason to History; it does not open trades.",
+  ohlcHelp:
+    "Optional: import historical candle prices (open, high, low, close). They power charts and the “what if I had held?” analysis after exit; they do not update your live positions.",
+  advancedImports: "Optional history imports",
+
   skipContent: "Skip to content",
   navigation: "Navigation",
   toggleMenu: "Collapse or expand navigation",
@@ -99,8 +130,8 @@ export const en = {
   realized: "Realized P&L",
   hypothetical: "P&L if held",
   missed: "Post-exit change",
-  mae: "Post-exit MAE",
-  mfe: "Post-exit MFE",
+  mae: "Largest adverse move",
+  mfe: "Largest favorable move",
   maxDrawdown: "Post-exit max drawdown",
   notes: "Notes",
   accountTab: "Account",
@@ -158,6 +189,28 @@ export const en = {
   importTrades: "Import closed trades CSV",
   importHelp:
     "symbol,quantity,entry,exit,openedAt,closedAt,reason,fees,externalId",
+  exitAnalysis: "Exit analysis",
+  dataThrough: "Latest historical data",
+  priceHistory: "Historical price",
+  chartNoData:
+    "No valid historical prices. Import OHLC in Settings → Connections to display the chart.",
+  realizedHelp:
+    "Profit or loss locked in when you closed the trade, after fees.",
+  hypotheticalHelp:
+    "Estimated result if held until the latest historical price; not a live quote.",
+  missedHelp:
+    "Difference from your actual result. Positive means holding would have earned more.",
+  maeHelp: "Largest adverse move from the exit price after closing.",
+  mfeHelp: "Largest favorable move from the exit price after closing.",
+  maxDrawdownHelp:
+    "Largest decline from a subsequent peak, using daily highs and lows.",
+  balanceHelp: "Total account value, including cash and positions.",
+  dailyHelp:
+    "Account value change today, adjusted for deposits and withdrawals.",
+  unrealizedHelp: "Open positions’ gain or loss, not yet realized.",
+  heatHelp: "Estimated portfolio loss if risk stops are reached.",
+  riskHelp: "Each bar shows how much of the scenario limit is used.",
+  withinLimit: "Within limit",
   postExitHelp:
     "Post-exit analytics require historical OHLC data. Values use account currency and the recorded FX rate.",
   unpriced: "Some position prices or FX rates are unavailable",
@@ -165,6 +218,38 @@ export const en = {
 export type Key = keyof typeof en;
 export const uz: Record<Key, string> = {
   ...en,
+  accountMenu: "Akkaunt menyusi",
+  noAlerts: "O‘qilmagan faol ogohlantirishlar yo‘q.",
+  ackHint: "O‘qilgan deb belgilash uchun tanlang",
+  riskDataMissing:
+    "Riskni hisoblash uchun ma’lumot yetishmayapti. Stop, bozor narxi va FX ma’lumotini tekshiring.",
+  limitLabel: "limit",
+  nearLimit: "Limitga yaqinlashmoqda.",
+  limitExceeded: "Limitdan oshgan.",
+  belowMinimum: "Minimal talabdan past.",
+  connected: "Ulangan",
+  checking: "Ulanish tekshirilmoqda",
+  gatewayStatusHelp: "Gateway holati har 30 soniyada tekshiriladi.",
+  demoConnection: "Demo ma’lumotlar — real brokerga ulanmagan.",
+  sessionsDone: "Boshqa sessiyalar tugatildi. Joriy sessiya faol qoladi.",
+  networkError:
+    "Ulanish amalga oshmadi. ERTA ishlayotganini tekshiring va qayta urinib ko‘ring.",
+  liveSetupTitle: "IBKR akkauntingizni ulash",
+  liveSetupHelp:
+    "Bu nusxa demo rejimida. Real ulanish uchun autentifikatsiyadan o‘tgan Client Portal Gateway va alohida live baza kerak; faqat account ID kiritish yetarli emas.",
+  liveStep1:
+    "ERTA ishlayotgan kompyuterda IBKR Client Portal Gateway’ni o‘rnating va ishga tushiring. Gateway’da IBKR akkauntingizga kiring va ikki bosqichli tasdiqlashni bajaring.",
+  liveStep2:
+    "Live ERTA serverida Gateway manzili, account ID va ishonchli TLS sertifikatini sozlang. Alohida baza ishlating, demo rejimini o‘chiring va worker’ni ishga tushiring.",
+  liveStep3:
+    "Live nusxada pastdagi maydonga account ID kiriting, Ulash va Sinxronlash tugmalarini bosing. ERTA ma’lumot o‘qiydi; brokerga buyurtma yubormaydi.",
+  setupDetails: "Server sozlamalari",
+  historyImportHelp:
+    "Ixtiyoriy: Flex tarixi yetarli bo‘lmasa yoki mavjud bo‘lmasa, yopilgan savdolarni import qiling. Tarixga kirish/chiqish narxi, miqdor, sana va yopilish sababi qo‘shiladi; yangi savdo ochilmaydi.",
+  ohlcHelp:
+    "Ixtiyoriy: tarixiy sham narxlarini (ochilish, eng yuqori, eng past, yopilish) import qiling. Ular grafik va chiqishdan keyingi “saqlaganimda nima bo‘lardi?” tahliliga kerak; live pozitsiyalarni yangilamaydi.",
+  advancedImports: "Ixtiyoriy tarix importi",
+
   skipContent: "Asosiy tarkibga o‘tish",
   navigation: "Navigatsiya",
   toggleMenu: "Menyuni yig‘ish yoki kengaytirish",
@@ -263,8 +348,8 @@ export const uz: Record<Key, string> = {
   realized: "Realizatsiyalangan P&L",
   hypothetical: "Saqlanganda P&L",
   missed: "Chiqishdan keyingi o‘zgarish",
-  mae: "Chiqishdan keyingi MAE",
-  mfe: "Chiqishdan keyingi MFE",
+  mae: "Eng katta salbiy o‘zgarish",
+  mfe: "Eng katta ijobiy o‘zgarish",
   maxDrawdown: "Chiqishdan keyingi max drawdown",
   notes: "Izohlar",
   accountTab: "Akkaunt",
@@ -321,6 +406,32 @@ export const uz: Record<Key, string> = {
   recordFlow: "Pul oqimini qayd etish",
   importTrades: "Yopilgan savdolar CSV import",
   importHelp: en.importHelp,
+  exitAnalysis: "Yopilishdan keyingi tahlil",
+  dataThrough: "Oxirgi tarixiy ma’lumot",
+  priceHistory: "Narx tarixi",
+  chartNoData:
+    "Tarixiy narxlar mavjud emas. Grafikni ko‘rish uchun Sozlamalar → Ulanishlar orqali OHLC import qiling.",
+  realizedHelp:
+    "Pozitsiya yopilganda olingan foyda yoki zarar, komissiya chegirilgan.",
+  hypotheticalHelp:
+    "Oxirgi tarixiy narxgacha ushlab turilgandagi taxminiy natija; real vaqtdagi narx emas.",
+  missedHelp:
+    "Haqiqiy natijadan farqi. Musbat bo‘lsa, ushlab turish ko‘proq foyda keltirgan bo‘lardi.",
+  maeHelp:
+    "Yopilgandan so‘ng chiqish narxiga nisbatan eng katta salbiy o‘zgarish.",
+  mfeHelp:
+    "Yopilgandan so‘ng chiqish narxiga nisbatan eng katta ijobiy o‘zgarish.",
+  maxDrawdownHelp:
+    "Keyingi cho‘qqidan eng katta pasayish; kunlik maksimum va minimumlardan hisoblanadi.",
+  balanceHelp:
+    "Naqd pul va barcha pozitsiyalar bilan akkauntning jami qiymati.",
+  dailyHelp:
+    "Bugungi akkaunt qiymati o‘zgarishi; depozit va yechimlar hisobdan chiqarilgan.",
+  unrealizedHelp: "Hali yopilmagan pozitsiyalarning foyda yoki zarari.",
+  heatHelp: "Risk stoplariga yetilganda portfelning taxminiy zarari.",
+  riskHelp:
+    "Har bir chiziq senariy limitining qancha qismi ishlatilganini ko‘rsatadi.",
+  withinLimit: "Limit ichida",
   postExitHelp:
     "Chiqishdan keyingi tahlil uchun tarixiy OHLC kerak. Qiymatlar akkaunt valyutasi va qayd etilgan FX bo‘yicha hisoblanadi.",
   unpriced: "Ayrim pozitsiyalarda narx yoki FX ma’lumoti yo‘q",

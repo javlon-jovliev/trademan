@@ -1,3 +1,4 @@
+import { riskAlertText } from "../risk/messages";
 import { db, demoMode } from "./db";
 import { evaluate } from "../risk/engine";
 import { IBKRAdapter } from "../broker/ibkr";
@@ -47,7 +48,10 @@ export async function refreshAlerts(accountId: string) {
           accountId,
           key: v.key,
           severity: v.severity,
-          message: `${v.key}: ${v.value?.toFixed(2) ?? "unavailable"} / ${v.limit ?? "—"} (${v.severity})`,
+          message: riskAlertText(
+            v,
+            account.user.language === "en" ? "en" : "uz",
+          ),
         },
       });
     if (
@@ -59,7 +63,7 @@ export async function refreshAlerts(accountId: string) {
       try {
         await sendTelegram(
           account.user.telegramChatId,
-          `ERTA · ${account.brokerId}\n${alert.message}`,
+          `ERTA · ${account.brokerId}\n${riskAlertText(v, account.user.language === "en" ? "en" : "uz")}`,
         );
         await db.alert.update({
           where: { id: alert.id },

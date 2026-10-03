@@ -133,3 +133,9 @@ Set SEED_USERNAME and SEED_PASSWORD in the test process environment. `node --env
 `tests/e2e/ui-audit.spec.ts` scans the six main views with axe-core WCAG A/AA rules at 320, 390 and 1440 px, in both light and dark themes. It checks page overflow, mobile navigation focus/Escape/Settings behavior, expanded history/chart sizing, visible drawer errors and form/filter subviews. Screenshots are saved under `test-results/` and uploaded by CI. These checks complement manual design review; they do not guarantee full WCAG compliance.
 
 `pnpm audit:performance` runs authenticated mobile Lighthouse reports for Dashboard and Portfolio against a disposable seeded demo database. Install Playwright Chromium first and provide the usual demo test environment variables. Reports are saved as JSON under `test-results/performance/`; session headers are removed before writing. Scores are recorded for investigation, not used as an unstable CI speed threshold. The runner starts a production server if needed. Live accounts are deliberately excluded from this audit.
+
+### Interface and connection status
+
+The account menu contains language and logout controls. Alerts are available from the header bell. Preference changes are silent; explicit saves show a small notification for 3.5 seconds. History details compare actual and hypothetical results with explanations and dated historical candles; the interface has no trade notes editor. Dashboard bars show scenario limit usage.
+
+For live accounts the header checks Client Portal Gateway authentication and connection status every 30 seconds. Demo mode is always identified as demo and never shown as a live connection. Settings → Connections includes Gateway setup instructions and optional CSV/OHLC import explanations. Live setup requires manual Gateway authentication, trusted TLS, a separate live database and the worker; entering an account ID alone is insufficient.

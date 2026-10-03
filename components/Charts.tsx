@@ -10,8 +10,12 @@ import {
 } from "recharts";
 export function EquityChart({
   points,
+  label,
+  currency,
 }: {
   points: { at: string; nlv: number }[];
+  label: string;
+  currency: string;
 }) {
   return (
     <div className="chart">
@@ -46,6 +50,8 @@ export function EquityChart({
             labelStyle={{ color: "var(--muted)" }}
             formatter={(v) =>
               new Intl.NumberFormat("en-US", {
+                style: "currency",
+                currency,
                 maximumFractionDigits: 2,
               }).format(Number(v))
             }
@@ -54,6 +60,7 @@ export function EquityChart({
           <Area
             type="monotone"
             dataKey="nlv"
+            name={label}
             stroke="#2563EB"
             fill="#2563EB"
             fillOpacity={0.08}

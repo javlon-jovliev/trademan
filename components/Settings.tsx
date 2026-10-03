@@ -12,6 +12,9 @@ export function SettingsPage({
   t: T;
   action: Action;
 }) {
+  const [sessionBusy, setSessionBusy] = useState(false);
+  const [sessionNotice, setSessionNotice] = useState("");
+  const [sessionError, setSessionError] = useState("");
   const [tab, setTab] = useState<Key>("accountTab");
   const [form, setForm] = useState({
     ...data.user,
@@ -124,17 +127,72 @@ export function SettingsPage({
               </label>
             </div>
             <button>{t("changePassword")}</button>{" "}
+          </form>
+          <div className="session-action">
             <button
               type="button"
-              onClick={() => action("sessions/revoke", {}).catch(() => {})}
+              disabled={sessionBusy}
+              onClick={async () => {
+                setSessionBusy(true);
+                setSessionNotice("");
+                setSessionError("");
+                try {
+                  await action("sessions/revoke", {}, { silent: true });
+                  setSessionNotice(t("sessionsDone"));
+                } catch (e) {
+                  setSessionError(
+                    e instanceof TypeError
+                      ? t("networkError")
+                      : e instanceof Error
+                        ? e.message
+                        : String(e),
+                  );
+                } finally {
+                  setSessionBusy(false);
+                }
+              }}
             >
-              {t("revoke")}
+              {t(sessionBusy ? "loading" : "revoke")}
             </button>
-          </form>
+            {sessionNotice && (
+              <p role="status" className="positive">
+                {sessionNotice}
+              </p>
+            )}
+            {sessionError && (
+              <p role="alert" className="negative">
+                {sessionError}
+              </p>
+            )}
+          </div>
         </>
       )}
       {tab === "connections" && (
         <>
+          <section className="connection-guide">
+            <h3>{t("liveSetupTitle")}</h3>
+            {data.demo && <p>{t("liveSetupHelp")}</p>}
+            <ol>
+              <li>{t("liveStep1")}</li>
+              <li>{t("liveStep2")}</li>
+              <li>{t("liveStep3")}</li>
+            </ol>
+            <a
+              href="https://www.interactivebrokers.com/docs/web-api/authentication/cpgw/client-portal-gateway-faq"
+              target="_blank"
+              rel="noreferrer"
+            >
+              IBKR · Client Portal Gateway
+            </a>
+            <details>
+              <summary>{t("setupDetails")}</summary>
+              <pre>{`DEMO_MODE=false
+IBKR_GATEWAY_URL=https://localhost:5000/v1/api
+IBKR_ACCOUNT_ID=YOUR_ACCOUNT_ID
+DATABASE_URL=YOUR_SEPARATE_LIVE_DATABASE
+NODE_EXTRA_CA_CERTS=PATH_TO_TRUSTED_GATEWAY_CERTIFICATE`}</pre>
+            </details>
+          </section>
           <div className="connection">
             <h2>Interactive Brokers</h2>
             {data.account && (
@@ -206,56 +264,61 @@ export function SettingsPage({
             </form>
           )}
           {data.account && (
-            <div className="imports">
-              {!data.demo && (
-                <>
-                  <button
-                    onClick={() => action("history/sync", {}).catch(() => {})}
-                  >
-                    IBKR Flex · {t("sync")}
-                  </button>
-                  <button
-                    onClick={() =>
-                      action("history/bars-sync", {}).catch(() => {})
-                    }
-                  >
-                    OHLC · {t("sync")}
-                  </button>
-                  {data.account?.historyError && (
-                    <p className="negative">{data.account.historyError}</p>
-                  )}
-                </>
-              )}
-              <label>
-                {t("importTrades")}
-                <input
-                  type="file"
-                  accept=".csv"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const csv = await file.text();
-                    action("history/import", { csv }).catch(() => {});
-                  }}
-                />
-              </label>
-              <small>{t("importHelp")}</small>
-              <label>
-                OHLC CSV
-                <input
-                  type="file"
-                  accept=".csv"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    action("history/bars", { csv: await file.text() }).catch(
-                      () => {},
-                    );
-                  }}
-                />
-              </label>
-              <small>symbol,time,open,high,low,close</small>
-            </div>
+            <details className="advanced-imports">
+              <summary>{t("advancedImports")}</summary>
+              <div className="imports">
+                {!data.demo && (
+                  <>
+                    <button
+                      onClick={() => action("history/sync", {}).catch(() => {})}
+                    >
+                      IBKR Flex · {t("sync")}
+                    </button>
+                    <button
+                      onClick={() =>
+                        action("history/bars-sync", {}).catch(() => {})
+                      }
+                    >
+                      OHLC · {t("sync")}
+                    </button>
+                    {data.account?.historyError && (
+                      <p className="negative">{data.account.historyError}</p>
+                    )}
+                  </>
+                )}
+                <label>
+                  {t("importTrades")}
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const csv = await file.text();
+                      action("history/import", { csv }).catch(() => {});
+                    }}
+                  />
+                </label>
+                <p className="muted">{t("historyImportHelp")}</p>
+                <small>{t("importHelp")}</small>
+                <label>
+                  OHLC CSV
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      action("history/bars", { csv: await file.text() }).catch(
+                        () => {},
+                      );
+                    }}
+                  />
+                </label>
+                <p className="muted">{t("ohlcHelp")}</p>
+                <small>symbol,time,open,high,low,close</small>
+              </div>
+            </details>
           )}
         </>
       )}

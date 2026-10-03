@@ -195,3 +195,19 @@ test("API logout revokes access", async ({ request }) => {
   expect((await post(request, "logout", {})).status()).toBe(200);
   expect((await request.get("/api/state")).status()).toBe(401);
 });
+
+test("revoking other sessions keeps the current session authenticated", async ({
+  request,
+  playwright,
+}) => {
+  const other = await playwright.request.newContext({ baseURL: origin });
+  await login(request);
+  await login(other);
+  expect((await post(request, "sessions/revoke", {})).status()).toBe(200);
+  expect((await request.get("/api/state")).status()).toBe(200);
+  expect((await other.get("/api/state")).status()).toBe(401);
+  await other.dispose();
+  const connection = await (await request.get("/api/connection")).json();
+  expect(connection.mode).toBe("demo");
+  expect(connection.connected).toBe(false);
+});

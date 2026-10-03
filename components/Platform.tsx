@@ -9,10 +9,9 @@ import {
   SlidersHorizontal,
   History,
   Settings,
-  PanelLeftClose,
+  ChevronLeft,
+  ChevronRight,
   Menu,
-  LogOut,
-  Globe,
 } from "lucide-react";
 import { en, uz, type Key } from "@/i18n/dictionaries";
 import type { State } from "./types";
@@ -22,8 +21,14 @@ const EquityChart = dynamic(() =>
 import { Portfolio, HistoryPage } from "./Positions";
 import { Scenarios, ScenarioEditor } from "./Scenarios";
 import { SettingsPage } from "./Settings";
+import { AccountMenu } from "./AccountMenu";
+import { Notifications } from "./Notifications";
 export type T = (key: Key) => string;
-export type Action = (route: string, body: unknown) => Promise<void>;
+export type Action = (
+  route: string,
+  body: unknown,
+  options?: { silent?: boolean },
+) => Promise<void>;
 export const money = (v: number | null | undefined, currency = "USD") =>
   v == null
     ? "—"
@@ -143,7 +148,12 @@ export default function Platform({ route }: { route: string }) {
         matchMedia("(prefers-color-scheme: dark)").matches);
     document.documentElement.dataset.theme = dark ? "dark" : "light";
   }, [data]);
-  const action: Action = async (path, body) => {
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(""), 3500);
+    return () => clearTimeout(timer);
+  }, [notice]);
+  const action: Action = async (path, body, options) => {
     setError("");
     setNotice("");
     setBusy(true);
@@ -156,9 +166,15 @@ export default function Platform({ route }: { route: string }) {
       const result = await r.json();
       if (!r.ok) throw Error(result.error);
       await reload();
-      setNotice(t("saved"));
+      if (!options?.silent) setNotice(t("saved"));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(
+        e instanceof TypeError
+          ? t("networkError")
+          : e instanceof Error
+            ? e.message
+            : String(e),
+      );
       throw e;
     } finally {
       setBusy(false);
@@ -173,11 +189,15 @@ export default function Platform({ route }: { route: string }) {
     { key: "history", icon: History },
   ] as const;
   const preferences = async (patch: Partial<State["user"]>) => {
-    await action("settings", {
-      ...data.user,
-      telegramChatId: data.user.telegramChatId ?? "",
-      ...patch,
-    });
+    await action(
+      "settings",
+      {
+        ...data.user,
+        telegramChatId: data.user.telegramChatId ?? "",
+        ...patch,
+      },
+      { silent: true },
+    );
   };
   const account = data.account;
   return (
@@ -196,19 +216,25 @@ export default function Platform({ route }: { route: string }) {
         aria-label={t("navigation")}
         id="navigation"
       >
-        <Link href="/dashboard" className="brand">
-          <span className="logo">e</span>
-          <strong>ERTA</strong>
-        </Link>
-        <button
-          className="collapse"
-          aria-label={t("toggleMenu")}
-          onClick={() =>
-            preferences({ collapsed: !data.user.collapsed }).catch(() => {})
-          }
-        >
-          <PanelLeftClose size={18} />
-        </button>
+        <div className="sidebar-head">
+          <Link href="/dashboard" className="brand" aria-label="ERTA">
+            <span className="logo">e</span>
+            <strong>ERTA</strong>
+          </Link>
+          <button
+            className="collapse"
+            aria-label={t("toggleMenu")}
+            onClick={() =>
+              preferences({ collapsed: !data.user.collapsed }).catch(() => {})
+            }
+          >
+            {data.user.collapsed ? (
+              <ChevronRight size={14} />
+            ) : (
+              <ChevronLeft size={14} />
+            )}
+          </button>
+        </div>
         <button
           className="mobile-close"
           aria-label={t("close")}
@@ -244,36 +270,15 @@ export default function Platform({ route }: { route: string }) {
             <Settings size={19} />
             <span>{t("settings")}</span>
           </Link>
-          <label className="language">
-            <Globe size={18} />
-            <select
-              aria-label={t("language")}
-              value={data.user.language}
-              onChange={(e) =>
-                preferences({ language: e.target.value as "uz" | "en" }).catch(
-                  () => {},
-                )
-              }
-            >
-              <option value="uz">O‘zbekcha</option>
-              <option value="en">English</option>
-            </select>
-          </label>
-          <div className="user">
-            <span className="avatar">
-              {data.user.username[0].toUpperCase()}
-            </span>
-            <span>{data.user.username}</span>
-            <button
-              title={t("logout")}
-              onClick={async () => {
-                await action("logout", {}).catch(() => {});
-                router.replace("/login");
-              }}
-            >
-              <LogOut size={16} />
-            </button>
-          </div>
+          <AccountMenu
+            user={data.user}
+            t={t}
+            onLanguage={(language) => preferences({ language }).catch(() => {})}
+            onLogout={async () => {
+              await action("logout", {}).catch(() => {});
+              router.replace("/login");
+            }}
+          />
         </div>
       </aside>
       {drawer && (
@@ -302,12 +307,15 @@ export default function Platform({ route }: { route: string }) {
             <Menu />
           </button>
           <h1>{t(section)}</h1>
-          <BrokerContext
-            account={account}
-            stale={data.stale}
-            demo={data.demo}
-            t={t}
-          />
+          <div className="header-tools">
+            <BrokerContext
+              account={account}
+              stale={data.stale}
+              demo={data.demo}
+              t={t}
+            />
+            <Notifications data={data} t={t} action={action} />
+          </div>
         </header>
         {error && (
           <div className="banner error" role="alert">
@@ -318,7 +326,7 @@ export default function Platform({ route }: { route: string }) {
           </div>
         )}
         {notice && (
-          <div className="banner success" role="status">
+          <div className="save-toast" role="status">
             {notice}
             <button aria-label={t("close")} onClick={() => setNotice("")}>
               ×
@@ -370,14 +378,60 @@ function BrokerContext({
   t: T;
 }) {
   const [clock, setClock] = useState(new Date());
+  const [health, setHealth] = useState<{
+    connected: boolean;
+    checkedAt: number | null;
+  } | null>(null);
+  useEffect(() => {
+    if (demo || account?.mode !== "live") return;
+    let stopped = false;
+    const controller = new AbortController();
+    const check = async () => {
+      if (document.visibilityState === "hidden") return;
+      try {
+        const r = await fetch("/api/connection", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!r.ok) throw Error("Unavailable");
+        const result = await r.json();
+        if (!stopped) setHealth(result);
+      } catch {
+        if (!stopped) setHealth({ connected: false, checkedAt: Date.now() });
+      }
+    };
+    check();
+    const timer = setInterval(check, 30000);
+    return () => {
+      stopped = true;
+      controller.abort();
+      clearInterval(timer);
+    };
+  }, [demo, account?.id, account?.mode]);
   useEffect(() => {
     const timer = setInterval(() => setClock(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+  const isDemo = demo || account?.mode === "demo";
+  const healthy =
+    !isDemo &&
+    health?.connected &&
+    health.checkedAt !== null &&
+    +clock - health.checkedAt < 60000;
+  const status = isDemo
+    ? t("demoConnection")
+    : !health
+      ? t("checking")
+      : healthy
+        ? t("connected")
+        : t("disconnected");
   return (
     <div className="broker-context">
       <span
-        className={`dot ${account?.connected && !stale ? "connected" : ""}`}
+        role="img"
+        aria-label={status}
+        title={`${status}. ${!isDemo ? t("gatewayStatusHelp") : ""}${stale ? " · " + t("stale") : ""}`}
+        className={`dot connection-signal ${healthy ? "connected" : ""} ${!isDemo && health && !healthy ? "offline" : ""}`}
       />
       {account
         ? `IBKR · ${account.brokerId} · ${clock.toLocaleTimeString("en-US", { timeZone: account.timezone, hour12: false })} ${new Intl.DateTimeFormat("en-US", { timeZone: account.timezone, timeZoneName: "short" }).formatToParts(clock).find((p) => p.type === "timeZoneName")?.value ?? ""}`
@@ -386,7 +440,7 @@ function BrokerContext({
     </div>
   );
 }
-function Dashboard({ data, t, action }: { data: State; t: T; action: Action }) {
+function Dashboard({ data, t }: { data: State; t: T; action: Action }) {
   const [period, setPeriod] = useState("1M");
   const { account, risk } = data;
   if (!account || !risk)
@@ -410,17 +464,58 @@ function Dashboard({ data, t, action }: { data: State; t: T; action: Action }) {
         ({ "1M": 31, "3M": 93, "1Y": 366 }[period] ?? 31) * 86400000;
   return (
     <>
-      <div className="kpis">
-        <Metric
-          label={t("netLiquidation")}
-          value={money(account.nlv, currency)}
-        />
-        <Metric label={t("daily")} value={money(risk.dailyPnl, currency)} />
-        <Metric label={t("unrealized")} value={money(sum("pnl"), currency)} />
-        <Metric
-          label={t("heat")}
-          value={`${percent(risk.heat)} / ${percent(scenario?.maxHeat)}`}
-        />
+      <div className="kpis dashboard-kpis">
+        {(
+          [
+            {
+              label: "netLiquidation",
+              value: account.nlv,
+              help: "balanceHelp",
+              pnl: false,
+            },
+            {
+              label: "daily",
+              value: risk.dailyPnl,
+              help: "dailyHelp",
+              pnl: true,
+            },
+            {
+              label: "unrealized",
+              value: sum("pnl"),
+              help: "unrealizedHelp",
+              pnl: true,
+            },
+          ] as const
+        ).map((item) => (
+          <div className="metric" key={item.label}>
+            <span>{t(item.label)}</span>
+            <strong
+              className={
+                item.pnl && item.value != null
+                  ? item.value >= 0
+                    ? "positive"
+                    : "negative"
+                  : ""
+              }
+            >
+              {item.pnl && item.value != null
+                ? item.value >= 0
+                  ? "↗ "
+                  : "↘ "
+                : ""}
+              {money(item.value, currency)}
+            </strong>
+            <p className="kpi-help">{t(item.help)}</p>
+          </div>
+        ))}
+        <div className="metric">
+          <span>{t("heat")}</span>
+          <strong>{percent(risk.heat)}</strong>
+          <p className="kpi-help">{t("heatHelp")}</p>
+          <span className="kpi-limit">
+            {t("limitLabel")}: {percent(scenario?.maxHeat)}
+          </span>
+        </div>
       </div>
       <div className="dashboard-main">
         <section className="panel">
@@ -438,29 +533,43 @@ function Dashboard({ data, t, action }: { data: State; t: T; action: Action }) {
           </div>
           <EquityChart
             points={account.snapshots.filter((p) => +new Date(p.at) >= cutoff)}
+            label={t("equity")}
+            currency={currency}
           />
         </section>
         <section className="panel">
           <h2>{t("risk")}</h2>
           <Badge status={risk.status} t={t} />
           <h3>{scenario?.name ?? t("noScenario")}</h3>
-          <dl>
-            <dt>{t("heat")}</dt>
-            <dd>
-              {percent(risk.heat)} / {percent(scenario?.maxHeat)}
-            </dd>
-            <dt>{t("drawdown")}</dt>
-            <dd>
-              {percent(risk.drawdowns.total)} /{" "}
-              {percent(scenario?.totalDrawdown)}
-            </dd>
-            <dt>{t("margin")}</dt>
-            <dd>{percent(risk.margin)}</dd>
-            <dt>{t("liquidity")}</dt>
-            <dd>{money(account.excessLiquidity, currency)}</dd>
-            <dt>{t("buyingPower")}</dt>
-            <dd>{money(account.buyingPower, currency)}</dd>
-          </dl>
+          <p className="risk-help muted">{t("riskHelp")}</p>
+          <RiskMeter
+            label={t("heat")}
+            value={risk.heat}
+            limit={scenario?.maxHeat}
+            t={t}
+          />
+          <RiskMeter
+            label={t("drawdown")}
+            value={risk.drawdowns.total}
+            limit={scenario?.totalDrawdown}
+            t={t}
+          />
+          <RiskMeter
+            label={t("margin")}
+            value={risk.margin}
+            limit={scenario?.maxMargin}
+            t={t}
+          />
+          <div className="risk-funds">
+            <div>
+              <span>{t("liquidity")}</span>
+              <strong>{money(account.excessLiquidity, currency)}</strong>
+            </div>
+            <div>
+              <span>{t("buyingPower")}</span>
+              <strong>{money(account.buyingPower, currency)}</strong>
+            </div>
+          </div>
           {risk.riskIncreasingBlocked && (
             <p className="negative">{t("blocked")}</p>
           )}
@@ -500,6 +609,11 @@ function Dashboard({ data, t, action }: { data: State; t: T; action: Action }) {
             <h2>{t("topRisk")}</h2>
             <Link href="/portfolio">{t("all")}</Link>
           </div>
+          <div className="risk-row risk-row-labels">
+            <span>{t("asset")}</span>
+            <span>{t("value")}</span>
+            <span>{t("heat")}</span>
+          </div>
           {[...risk.rows]
             .sort((a, b) => (b.heat ?? -1) - (a.heat ?? -1))
             .slice(0, 5)
@@ -512,28 +626,56 @@ function Dashboard({ data, t, action }: { data: State; t: T; action: Action }) {
             ))}
         </section>
       </div>
-      {account.alerts.filter((a) => !a.acknowledged).length > 0 && (
-        <section className="panel">
-          <h2>{t("alerts")}</h2>
-          {account.alerts
-            .filter((a) => !a.acknowledged)
-            .slice(0, 10)
-            .map((a) => (
-              <div className="alert-row" key={a.id}>
-                <Badge status={a.severity} t={t} />
-                <span>{a.message}</span>
-                <button
-                  onClick={() =>
-                    action("alert/ack", { id: a.id }).catch(() => {})
-                  }
-                >
-                  {t("ack")}
-                </button>
-              </div>
-            ))}
-        </section>
-      )}
     </>
+  );
+}
+function RiskMeter({
+  label,
+  value,
+  limit,
+  t,
+}: {
+  label: string;
+  value: number | null;
+  limit?: number;
+  t: T;
+}) {
+  const ratio =
+    value != null && limit != null && limit > 0 ? value / limit : null;
+  const tone =
+    ratio == null
+      ? "unknown"
+      : ratio > 1
+        ? "danger"
+        : ratio >= 0.8
+          ? "caution"
+          : "safe";
+  return (
+    <div className={`risk-meter ${tone}`}>
+      <div>
+        <span>{label}</span>
+        <strong>
+          {percent(value)} <small>/ {percent(limit)}</small>
+        </strong>
+      </div>
+      <div className="risk-meter-track" aria-hidden="true">
+        <span
+          style={{
+            width: `${Math.min(100, Math.max(0, (ratio ?? 0) * 100))}%`,
+          }}
+        />
+      </div>
+      <small>
+        {ratio == null
+          ? t("unknown")
+          : ratio > 1
+            ? t("breach")
+            : ratio >= 0.8
+              ? t("warning")
+              : t("withinLimit")}{" "}
+        · {t("limitLabel")}: {percent(limit)}
+      </small>
+    </div>
   );
 }
 function Exposure({

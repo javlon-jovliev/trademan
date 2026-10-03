@@ -40,9 +40,9 @@ test("authentication, portfolio, history, scenarios and preferences", async ({
   await expect(page).toHaveURL(/\/scenarios$/);
   const row = page.locator("tr").filter({ hasText: "E2E policy" });
   await expect(row).toBeVisible();
-  await row.locator("summary").click();
-  await row
-    .getByRole("button", { name: "Faollashtirish", exact: true })
+  await row.locator(".icon-button").click();
+  await page
+    .getByRole("menuitem", { name: "Faollashtirish", exact: true })
     .click();
   await expect(row.getByText("Faol", { exact: true })).toBeVisible();
   await page.goto("/settings");
@@ -51,11 +51,22 @@ test("authentication, portfolio, history, scenarios and preferences", async ({
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page.getByLabel("Mavzu", { exact: true }).selectOption("light");
   await page.getByRole("button", { name: "Saqlash", exact: true }).click();
-  await page.getByLabel("Til", { exact: true }).selectOption("en");
+  await page
+    .getByRole("button", { name: "Akkaunt menyusi", exact: true })
+    .click();
+  await page
+    .getByRole("menuitemradio", { name: "English", exact: true })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Settings", exact: true }),
   ).toBeVisible();
-  await page.getByLabel("Language", { exact: true }).selectOption("uz");
+  await page.getByRole("button", { name: "Account menu", exact: true }).click();
+  await page
+    .getByRole("menuitemradio", { name: "O‘zbekcha", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Sozlamalar", exact: true }),
+  ).toBeVisible();
   await page.goto("/dashboard");
   await expect(
     page.getByRole("heading", { name: "Bosh sahifa", exact: true }),

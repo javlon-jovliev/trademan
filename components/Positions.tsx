@@ -363,7 +363,6 @@ export function Portfolio({
 export function HistoryPage({
   data,
   t,
-  action,
 }: {
   data: State;
   t: T;
@@ -497,13 +496,7 @@ export function HistoryPage({
         onRow={(r) => setExpanded(expanded === r.id ? "" : r.id)}
         expanded={(r) =>
           expanded === r.id ? (
-            <TradeDetails
-              key={r.id}
-              trade={r}
-              t={t}
-              currency={currency}
-              action={action}
-            />
+            <TradeDetails key={r.id} trade={r} t={t} currency={currency} />
           ) : null
         }
       />
@@ -515,50 +508,98 @@ function TradeDetails({
   trade,
   t,
   currency,
-  action,
 }: {
   trade: TradeDTO;
   t: T;
   currency?: string;
-  action: Action;
 }) {
   const metrics = postExit(trade, trade.bars);
+  const lastBar = [...trade.bars]
+    .sort((a, b) => a.time.localeCompare(b.time))
+    .at(-1);
+  const scale = Math.max(
+    Math.abs(metrics.realized),
+    Math.abs(metrics.hypothetical ?? 0),
+    1,
+  );
+  const primary = ["realized", "hypothetical", "missed"] as const;
+  const secondary = ["mae", "mfe", "maxDrawdown"] as const;
   return (
     <div className="trade-details">
-      <div className="summary">
-        {Object.entries(metrics).map(([key, value]) => (
-          <Metric
-            key={key}
-            label={t(key as Parameters<T>[0])}
-            value={money(value, currency)}
-          />
+      <div className="trade-analysis-heading">
+        <h3>{t("exitAnalysis")}</h3>
+        {lastBar && (
+          <span className="muted">
+            {t("dataThrough")}: {lastBar.time.slice(0, 10)}
+          </span>
+        )}
+      </div>
+      <div className="trade-comparison">
+        {primary.map((key) => {
+          const value = metrics[key];
+          return (
+            <div className="analysis-card" key={key}>
+              <span>{t(key)}</span>
+              <strong
+                className={
+                  value == null ? "muted" : value >= 0 ? "positive" : "negative"
+                }
+              >
+                {money(value, currency)}
+              </strong>
+              <p>{t(`${key}Help`)}</p>
+              {key !== "missed" && value != null && (
+                <div className="comparison-track" aria-hidden="true">
+                  <div
+                    className={value >= 0 ? "gain" : "loss"}
+                    style={{ width: `${(Math.abs(value) / scale) * 100}%` }}
+                  />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div className="trade-risk-summary">
+        {secondary.map((key) => (
+          <div key={key}>
+            <span>{t(key)}</span>
+            <strong>{money(metrics[key], currency)}</strong>
+            <p>{t(`${key}Help`)}</p>
+          </div>
         ))}
       </div>
-      <p className="muted">{t("postExitHelp")}</p>
-      {trade.bars.length > 0 && (
+      <div className="trade-chart-heading">
+        <h3>{t("priceHistory")}</h3>
+        <span className="muted">{trade.symbol}</span>
+      </div>
+      <div className="chart-legend">
+        <span className="entry-legend">
+          ● {t("entry")}:{" "}
+          {new Intl.NumberFormat("en-US", { maximumFractionDigits: 4 }).format(
+            trade.entry,
+          )}
+        </span>
+        <span className="exit-legend">
+          ● {t("exit")}:{" "}
+          {new Intl.NumberFormat("en-US", { maximumFractionDigits: 4 }).format(
+            trade.exit,
+          )}
+        </span>
+      </div>
+      {trade.bars.length > 0 ? (
         <Candles
           bars={trade.bars}
           entry={trade.openedAt}
           exit={trade.closedAt}
           entryLabel={t("entry")}
           exitLabel={t("exit")}
+          emptyLabel={t("chartNoData")}
         />
+      ) : (
+        <div className="chart-empty">{t("chartNoData")}</div>
       )}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          action("trade/notes", {
-            id: trade.id,
-            notes: new FormData(e.currentTarget).get("notes"),
-          }).catch(() => {});
-        }}
-      >
-        <label>
-          {t("notes")}
-          <textarea name="notes" defaultValue={trade.notes} />
-        </label>
-        <button>{t("save")}</button>
-      </form>
+      <p className="trade-data-help muted">{t("postExitHelp")}</p>
     </div>
   );
 }
