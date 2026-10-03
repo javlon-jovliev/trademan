@@ -25,6 +25,8 @@ export function Candles({
     if (!ref.current || !bars.length) return;
     const chart = createChart(ref.current, {
       height: 250,
+      width: ref.current.clientWidth,
+      autoSize: true,
       layout: {
         background: {
           color: getComputedStyle(ref.current)
@@ -43,23 +45,6 @@ export function Candles({
             .trim(),
         },
       },
-    });
-    const themeObserver = new MutationObserver(() => {
-      if (!ref.current) return;
-      const style = getComputedStyle(ref.current);
-      chart.applyOptions({
-        layout: {
-          background: { color: style.getPropertyValue("--soft").trim() },
-          textColor: style.getPropertyValue("--muted").trim(),
-        },
-        grid: {
-          horzLines: { color: style.getPropertyValue("--border").trim() },
-        },
-      });
-    });
-    themeObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["data-theme"],
     });
     const series = chart.addSeries(CandlestickSeries);
     series.setData(
@@ -88,13 +73,7 @@ export function Candles({
       .sort((a, b) => Number(a.time) - Number(b.time));
     createSeriesMarkers(series, markers);
     chart.timeScale().fitContent();
-    const observer = new ResizeObserver((entries) =>
-      chart.applyOptions({ width: entries[0].contentRect.width }),
-    );
-    observer.observe(ref.current);
     return () => {
-      observer.disconnect();
-      themeObserver.disconnect();
       chart.remove();
     };
   }, [bars, entry, exit, entryLabel, exitLabel]);
