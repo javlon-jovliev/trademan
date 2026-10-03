@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { en, uz, type Key } from "@/i18n/dictionaries";
 import type { State } from "./types";
+import { riskAlertText } from "@/risk/messages";
 const EquityChart = dynamic(() =>
   import("./Charts").then((m) => m.EquityChart),
 );
@@ -540,6 +541,14 @@ function Dashboard({ data, t }: { data: State; t: T; action: Action }) {
         <section className="panel">
           <h2>{t("risk")}</h2>
           <Badge status={risk.status} t={t} />
+          {risk.violations.find((v) => v.severity === "breach") && (
+            <p className="risk-reason">
+              {riskAlertText(
+                risk.violations.find((v) => v.severity === "breach")!,
+                data.user.language,
+              )}
+            </p>
+          )}
           <h3>{scenario?.name ?? t("noScenario")}</h3>
           <p className="risk-help muted">{t("riskHelp")}</p>
           <RiskMeter

@@ -204,6 +204,7 @@ export const en = {
   mfeHelp: "Largest favorable move from the exit price after closing.",
   maxDrawdownHelp:
     "Largest decline from a subsequent peak, using daily highs and lows.",
+  stocks: "Stocks",
   balanceHelp: "Total account value, including cash and positions.",
   dailyHelp:
     "Account value change today, adjusted for deposits and withdrawals.",
@@ -274,9 +275,9 @@ export const uz: Record<Key, string> = {
   close: "Yopish",
   details: "Batafsil",
   netLiquidation: "Umumiy qiymat",
-  daily: "Kunlik P&L",
-  unrealized: "Realizatsiyalanmagan P&L",
-  heat: "Portfolio heat",
+  daily: "Bugungi foyda / zarar",
+  unrealized: "Ochiq pozitsiyalar natijasi",
+  heat: "Stop bo‘yicha risk",
   equity: "Portfel qiymati",
   risk: "Risk holati",
   allocation: "Aktivlar taqsimoti",
@@ -345,12 +346,12 @@ export const uz: Record<Key, string> = {
   closedAt: "Yopilgan vaqt",
   reason: "Yopilish sababi",
   fees: "Komissiya",
-  realized: "Realizatsiyalangan P&L",
-  hypothetical: "Saqlanganda P&L",
-  missed: "Chiqishdan keyingi o‘zgarish",
+  realized: "Yopilishdagi foyda / zarar",
+  hypothetical: "Ushlab turilgandagi natija",
+  missed: "Ushlab turish bilan farq",
   mae: "Eng katta salbiy o‘zgarish",
   mfe: "Eng katta ijobiy o‘zgarish",
-  maxDrawdown: "Chiqishdan keyingi max drawdown",
+  maxDrawdown: "Cho‘qqidan eng katta pasayish",
   notes: "Izohlar",
   accountTab: "Akkaunt",
   connections: "Ulanishlar",
@@ -423,6 +424,7 @@ export const uz: Record<Key, string> = {
     "Yopilgandan so‘ng chiqish narxiga nisbatan eng katta ijobiy o‘zgarish.",
   maxDrawdownHelp:
     "Keyingi cho‘qqidan eng katta pasayish; kunlik maksimum va minimumlardan hisoblanadi.",
+  stocks: "Aksiyalar",
   balanceHelp:
     "Naqd pul va barcha pozitsiyalar bilan akkauntning jami qiymati.",
   dailyHelp:

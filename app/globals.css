@@ -1686,3 +1686,12 @@ select {
 .risk-row-labels span:first-child {
   text-align: left;
 }
+
+.risk-reason {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--red);
+  padding: 10px 12px;
+  border-left: 2px solid var(--red);
+  background: var(--soft);
+}
