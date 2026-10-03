@@ -71,42 +71,45 @@ export function Scenarios({
                   <td key={i}>{percent(v)}</td>
                 ))}
                 <td>
-                  <div className="row-actions">
-                    <button
-                      onClick={() =>
-                        action("scenario/activate", { id: s.id }).catch(
-                          () => {},
-                        )
-                      }
-                      disabled={
-                        s.draft || s.id === data.account?.activeScenarioId
-                      }
-                    >
-                      {t("activate")}
-                    </button>
-                    <Link href={`/scenarios/${s.id}`}>{t("edit")}</Link>
-                    <button
-                      onClick={() =>
-                        action("scenario/duplicate", { id: s.id }).catch(
-                          () => {},
-                        )
-                      }
-                    >
-                      {t("duplicate")}
-                    </button>
-                    <button
-                      className="negative"
-                      disabled={s.id === data.account?.activeScenarioId}
-                      onClick={() => {
-                        if (confirm(t("confirmDelete")))
-                          action("scenario/delete", { id: s.id }).catch(
+                  <details className="row-menu">
+                    <summary aria-label={t("details")}>•••</summary>
+                    <div className="row-actions">
+                      <button
+                        onClick={() =>
+                          action("scenario/activate", { id: s.id }).catch(
                             () => {},
-                          );
-                      }}
-                    >
-                      {t("remove")}
-                    </button>
-                  </div>
+                          )
+                        }
+                        disabled={
+                          s.draft || s.id === data.account?.activeScenarioId
+                        }
+                      >
+                        {t("activate")}
+                      </button>
+                      <Link href={`/scenarios/${s.id}`}>{t("edit")}</Link>
+                      <button
+                        onClick={() =>
+                          action("scenario/duplicate", { id: s.id }).catch(
+                            () => {},
+                          )
+                        }
+                      >
+                        {t("duplicate")}
+                      </button>
+                      <button
+                        className="negative"
+                        disabled={s.id === data.account?.activeScenarioId}
+                        onClick={() => {
+                          if (confirm(t("confirmDelete")))
+                            action("scenario/delete", { id: s.id }).catch(
+                              () => {},
+                            );
+                        }}
+                      >
+                        {t("remove")}
+                      </button>
+                    </div>
+                  </details>
                 </td>
               </tr>
             ))}

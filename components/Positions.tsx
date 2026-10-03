@@ -320,6 +320,15 @@ export function Portfolio({
                     defaultValue={selected.riskStop ?? ""}
                   />
                 </label>
+                <label>
+                  {t("sector")}
+                  <input
+                    name="sector"
+                    defaultValue={selected.sector}
+                    required
+                    maxLength={60}
+                  />
+                </label>
                 <button className="primary">{t("save")}</button>
               </form>
             </Dialog.Content>

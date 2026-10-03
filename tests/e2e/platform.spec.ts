@@ -40,6 +40,7 @@ test("authentication, portfolio, history, scenarios and preferences", async ({
   await expect(page).toHaveURL(/\/scenarios$/);
   const row = page.locator("tr").filter({ hasText: "E2E policy" });
   await expect(row).toBeVisible();
+  await row.locator("summary").click();
   await row
     .getByRole("button", { name: "Faollashtirish", exact: true })
     .click();
@@ -55,6 +56,11 @@ test("authentication, portfolio, history, scenarios and preferences", async ({
     page.getByRole("heading", { name: "Settings", exact: true }),
   ).toBeVisible();
   await page.getByLabel("Language", { exact: true }).selectOption("uz");
+  await page.goto("/dashboard");
+  await expect(
+    page.getByRole("heading", { name: "Bosh sahifa", exact: true }),
+  ).toBeVisible();
+  await page.screenshot({ path: "test-results/dashboard.png", fullPage: true });
 });
 test("rejects cross origin requests and unauthorized API reads", async ({
   request,
