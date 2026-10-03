@@ -6,8 +6,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import type { State, TradeDTO } from "./types";
 import { type T, type Action, money, percent, Badge, Metric } from "./Platform";
 import { DataTable } from "./DataTable";
-import dynamic from "next/dynamic";
-const Candles = dynamic(() => import("./Candles").then((m) => m.Candles));
+import { Candles } from "./Candles";
 import { postExit } from "@/risk/engine";
 type Row = NonNullable<State["risk"]>["rows"][number];
 export function Portfolio({
