@@ -16,7 +16,7 @@ export function Notifications({
   const alerts =
     data.account?.alerts.filter((a) => a.active && !a.acknowledged) ?? [];
   return (
-    <Dropdown.Root>
+    <Dropdown.Root modal={false}>
       <Dropdown.Trigger asChild>
         <button
           className="notification-trigger"

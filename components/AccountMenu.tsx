@@ -15,7 +15,7 @@ export function AccountMenu({
   onLogout: () => void;
 }) {
   return (
-    <Dropdown.Root>
+    <Dropdown.Root modal={false}>
       <Dropdown.Trigger asChild>
         <button
           className="account-trigger"

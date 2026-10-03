@@ -71,7 +71,7 @@ export function Scenarios({
                   <td key={i}>{percent(v)}</td>
                 ))}
                 <td>
-                  <Dropdown.Root>
+                  <Dropdown.Root modal={false}>
                     <Dropdown.Trigger asChild>
                       <button
                         className="icon-button"
