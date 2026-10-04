@@ -1,0 +1,1 @@
+ALTER TABLE "Account" ADD COLUMN "barsSyncedAt" TIMESTAMP(3), ADD COLUMN "barsError" TEXT;

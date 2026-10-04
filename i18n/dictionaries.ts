@@ -193,7 +193,7 @@ export const en = {
   dataThrough: "Latest historical data",
   priceHistory: "Historical price",
   chartNoData:
-    "No valid historical prices. Import OHLC in Settings → Connections to display the chart.",
+    "Historical prices are not available yet. ERTA downloads them automatically; see connection status in Settings → Connections.",
   realizedHelp:
     "Profit or loss locked in when you closed the trade, after fees.",
   hypotheticalHelp:
@@ -217,8 +217,23 @@ export const en = {
   moreAlerts: "Show more",
   readAlertHelp:
     "Reading an alert does not resolve the risk. Includes the latest 100 read alerts whose condition has cleared.",
+  allChoices: "All",
+  showResults: "Show results",
+  automaticHistory: "Automatic history",
+  automaticHistoryHelp:
+    "ERTA retrieves executions through IBKR Flex and downloads daily candles through Gateway. Both refresh every six hours; no file upload is required.",
+  demoHistoryHelp:
+    "Demo history is included. Live mode uses actual IBKR data and never substitutes demo prices.",
+  tradeHistory: "Closed trade history",
+  waitingSync: "Waiting for automatic sync",
+  historySetupNeeded:
+    "Check server Flex token and query setup. ERTA will retry automatically.",
+  pricesSetupNeeded:
+    "Check Gateway login and historical market-data permissions. ERTA will retry; cached prices remain available.",
+  flexSetupHelp:
+    "One-time server setup: use an Activity Flex XML query containing execution fields listed in README. Configure UTC yyyyMMdd;HHmmss timestamps and a period including opening and closing executions. No reports need to be downloaded manually.",
   postExitHelp:
-    "Post-exit analytics require historical OHLC data. Values use account currency and the recorded FX rate.",
+    "Daily candles are automatically retrieved from IBKR in live mode. The displayed dates show the available history; results use account currency and recorded FX.",
   unpriced: "Some position prices or FX rates are unavailable",
 };
 export type Key = keyof typeof en;
@@ -416,7 +431,7 @@ export const uz: Record<Key, string> = {
   dataThrough: "Oxirgi tarixiy ma’lumot",
   priceHistory: "Narx tarixi",
   chartNoData:
-    "Tarixiy narxlar mavjud emas. Grafikni ko‘rish uchun Sozlamalar → Ulanishlar orqali OHLC import qiling.",
+    "Tarixiy narxlar hali mavjud emas. ERTA ularni avtomatik yuklaydi; holatini Sozlamalar → Ulanishlar orqali tekshiring.",
   realizedHelp:
     "Pozitsiya yopilganda olingan foyda yoki zarar, komissiya chegirilgan.",
   hypotheticalHelp:
@@ -444,7 +459,22 @@ export const uz: Record<Key, string> = {
   moreAlerts: "Ko‘proq ko‘rish",
   readAlertHelp:
     "Alertni o‘qish riskni bartaraf etmaydi. Risk holati tugagan o‘qilgan alertlardan oxirgi 100 tasi saqlanib ko‘rsatiladi.",
+  allChoices: "Barchasi",
+  showResults: "Natijalarni ko‘rish",
+  automaticHistory: "Avtomatik tarix",
+  automaticHistoryHelp:
+    "ERTA savdolarni IBKR Flex orqali, kunlik narx shamlarini Gateway orqali o‘zi oladi. Har olti soatda yangilanadi; fayl yuklash talab qilinmaydi.",
+  demoHistoryHelp:
+    "Demo tarixi tayyor. Live rejimda haqiqiy IBKR ma’lumotlari olinadi; demo narxlari qo‘shilmaydi.",
+  tradeHistory: "Yopilgan savdolar tarixi",
+  waitingSync: "Avtomatik sinxronlash kutilmoqda",
+  historySetupNeeded:
+    "Serverdagi Flex token va query sozlamalarini tekshiring. ERTA avtomatik qayta urinadi.",
+  pricesSetupNeeded:
+    "Gateway login va tarixiy narxlarga ruxsatni tekshiring. ERTA qayta urinadi; oldingi narxlar saqlanadi.",
+  flexSetupHelp:
+    "Bir martalik server sozlamasi: README’dagi execution ustunlari bilan Activity Flex XML query yaratiladi. Vaqt UTC yyyyMMdd;HHmmss va davr ochilish/yopilish savdolarini qamrashi kerak. Hisobotlarni qo‘lda yuklash shart emas.",
   postExitHelp:
-    "Chiqishdan keyingi tahlil uchun tarixiy OHLC kerak. Qiymatlar akkaunt valyutasi va qayd etilgan FX bo‘yicha hisoblanadi.",
+    "Live rejimda kunlik narxlar IBKR’dan avtomatik olinadi. Grafikdagi sanalar mavjud tarixni ko‘rsatadi. Natijalar akkaunt valyutasi va qayd etilgan FX bo‘yicha hisoblanadi.",
   unpriced: "Ayrim pozitsiyalarda narx yoki FX ma’lumoti yo‘q",
 };

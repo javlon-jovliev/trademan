@@ -197,12 +197,62 @@ export async function syncBars(accountId: string) {
     where: { id: accountId },
   });
   if (account.mode === "demo") return;
-  const trades = await db.trade.findMany({
-    where: { accountId, conid: { not: null } },
-  });
+  const trades = await db.trade.findMany({ where: { accountId } });
   const broker = new IBKRAdapter();
-  for (const conid of [...new Set(trades.map((t) => t.conid!))]) {
-    const bars = await broker.history(conid);
-    await db.trade.updateMany({ where: { accountId, conid }, data: { bars } });
+  let failures = trades.filter((t) => !t.conid).length;
+  for (const conid of [
+    ...new Set(trades.flatMap((t) => (t.conid ? [t.conid] : []))),
+  ]) {
+    try {
+      const group = trades.filter((t) => t.conid === conid);
+      const opened = new Date(
+        Math.min(...group.map((t) => +t.openedAt)) - 7 * 86400000,
+      );
+      const cached = group
+        .flatMap(
+          (t) =>
+            t.bars as unknown as {
+              time: string;
+              open: number;
+              high: number;
+              low: number;
+              close: number;
+            }[],
+        )
+        .filter((b) => Number.isFinite(+new Date(b.time)));
+      const earliest = cached.length
+        ? Math.min(...cached.map((b) => +new Date(b.time)))
+        : Infinity;
+      const latest = cached.length
+        ? Math.max(...cached.map((b) => +new Date(b.time)))
+        : 0;
+      const from =
+        earliest <= +opened
+          ? new Date(Math.max(+opened, latest - 7 * 86400000))
+          : opened;
+      const fresh = await broker.history(conid, { from });
+      if (!fresh.length) throw Error("Historical prices unavailable");
+      const merged = new Map(cached.map((b) => [b.time, b]));
+      for (const b of fresh) merged.set(b.time, b);
+      const bars = [...merged.values()].sort((a, b) =>
+        a.time.localeCompare(b.time),
+      );
+      await db.trade.updateMany({
+        where: { accountId, conid },
+        data: { bars },
+      });
+    } catch {
+      failures++;
+    }
   }
+  await db.account.update({
+    where: { id: accountId },
+    data: {
+      barsSyncedAt: failures ? undefined : new Date(),
+      barsError: failures
+        ? "Historical prices unavailable for some contracts; check Gateway login and market-data permissions. Automatic retry is scheduled."
+        : null,
+    },
+  });
+  if (failures) throw Error("Historical price sync incomplete");
 }

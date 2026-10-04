@@ -1,7 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import Link from "next/link";
+import { SlidersHorizontal, X, Download } from "lucide-react";
+import { DateTime, dateKey } from "./DateTime";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { State, TradeDTO } from "./types";
 import { type T, type Action, money, percent, Badge, Metric } from "./Platform";
@@ -19,7 +21,6 @@ export function Portfolio({
   action: Action;
 }) {
   const [query, setQuery] = useState("");
-  const [filters, setFilters] = useState(false);
   const [side, setSide] = useState("");
   const [sector, setSector] = useState("");
   const [asset, setAsset] = useState("");
@@ -164,83 +165,16 @@ export function Portfolio({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          <button aria-expanded={filters} onClick={() => setFilters(!filters)}>
-            {t("filters")}{" "}
-            {[side, sector, asset, profit, min, max, violations].filter(Boolean)
-              .length || ""}
-          </button>
-          <button onClick={() => exportCSV(rows, "portfolio.csv")}>
-            {t("export")}
-          </button>
-        </div>
-        {filters && (
-          <div className="filter-panel">
-            <label>
-              {t("side")}
-              <select value={side} onChange={(e) => setSide(e.target.value)}>
-                <option value="">—</option>
-                <option value="long">{t("long")}</option>
-                <option value="short">{t("short")}</option>
-              </select>
-            </label>
-            <label>
-              {t("sector")}
-              <select
-                value={sector}
-                onChange={(e) => setSector(e.target.value)}
-              >
-                <option value="">—</option>
-                {Object.keys(risk.sectors).map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              {t("assetClass")}
-              <select value={asset} onChange={(e) => setAsset(e.target.value)}>
-                <option value="">—</option>
-                {Object.keys(risk.assets).map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              P&L
-              <select
-                value={profit}
-                onChange={(e) => setProfit(e.target.value)}
-              >
-                <option value="">—</option>
-                <option value="positive">{t("profitable")}</option>
-                <option value="negative">{t("losing")}</option>
-              </select>
-            </label>
-            <label>
-              {t("minHeat")}
-              <input
-                type="number"
-                value={min}
-                onChange={(e) => setMin(e.target.value)}
-              />
-            </label>
-            <label>
-              {t("maxHeatFilter")}
-              <input
-                type="number"
-                value={max}
-                onChange={(e) => setMax(e.target.value)}
-              />
-            </label>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={violations}
-                onChange={(e) => setViolations(e.target.checked)}
-              />
-              {t("violation")}
-            </label>
-            <button
-              onClick={() => {
+          <div className="table-tools">
+            <TableFilters
+              t={t}
+              count={
+                [side, sector, asset, profit, min, max, violations].filter(
+                  Boolean,
+                ).length
+              }
+              results={rows.length}
+              onClear={() => {
                 setSide("");
                 setSector("");
                 setAsset("");
@@ -250,10 +184,89 @@ export function Portfolio({
                 setViolations(false);
               }}
             >
-              {t("clear")}
+              <div className="filter-fields">
+                <label>
+                  {t("side")}
+                  <select
+                    value={side}
+                    onChange={(e) => setSide(e.target.value)}
+                  >
+                    <option value="">{t("allChoices")}</option>
+                    <option value="long">{t("long")}</option>
+                    <option value="short">{t("short")}</option>
+                  </select>
+                </label>
+                <label>
+                  {t("sector")}
+                  <select
+                    value={sector}
+                    onChange={(e) => setSector(e.target.value)}
+                  >
+                    <option value="">{t("allChoices")}</option>
+                    {Object.keys(risk.sectors).map((s) => (
+                      <option key={s}>{s}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  {t("assetClass")}
+                  <select
+                    value={asset}
+                    onChange={(e) => setAsset(e.target.value)}
+                  >
+                    <option value="">{t("allChoices")}</option>
+                    {Object.keys(risk.assets).map((s) => (
+                      <option key={s}>{s}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  P&L
+                  <select
+                    value={profit}
+                    onChange={(e) => setProfit(e.target.value)}
+                  >
+                    <option value="">{t("allChoices")}</option>
+                    <option value="positive">{t("profitable")}</option>
+                    <option value="negative">{t("losing")}</option>
+                  </select>
+                </label>
+                <label>
+                  {t("minHeat")}
+                  <input
+                    type="number"
+                    value={min}
+                    onChange={(e) => setMin(e.target.value)}
+                  />
+                </label>
+                <label>
+                  {t("maxHeatFilter")}
+                  <input
+                    type="number"
+                    value={max}
+                    onChange={(e) => setMax(e.target.value)}
+                  />
+                </label>
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={violations}
+                    onChange={(e) => setViolations(e.target.checked)}
+                  />
+                  {t("violation")}
+                </label>
+              </div>
+            </TableFilters>
+            <button
+              className="table-tool icon-button"
+              aria-label={t("export")}
+              title={t("export")}
+              onClick={() => exportCSV(rows, "portfolio.csv")}
+            >
+              <Download size={17} />
             </button>
           </div>
-        )}
+        </div>
         <DataTable
           data={rows}
           columns={columns}
@@ -369,7 +382,6 @@ export function HistoryPage({
   action: Action;
 }) {
   const [query, setQuery] = useState("");
-  const [filters, setFilters] = useState(false);
   const [reason, setReason] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -380,15 +392,25 @@ export function HistoryPage({
     (p) =>
       p.symbol.toLowerCase().includes(query.toLowerCase()) &&
       (!reason || p.reason === reason) &&
-      (!from || p.closedAt.slice(0, 10) >= from) &&
-      (!to || p.closedAt.slice(0, 10) <= to),
+      (!from ||
+        dateKey(p.closedAt, data.account?.timezone ?? data.user.timezone) >=
+          from) &&
+      (!to ||
+        dateKey(p.closedAt, data.account?.timezone ?? data.user.timezone) <=
+          to),
   );
   const columns: ColumnDef<TradeDTO>[] = [
     { accessorKey: "symbol", header: t("asset") },
     {
       accessorKey: "closedAt",
       header: t("closedAt"),
-      cell: ({ getValue }) => new Date(getValue() as string).toLocaleString(),
+      cell: ({ getValue }) => (
+        <DateTime
+          value={getValue() as string}
+          timeZone={data.account?.timezone ?? data.user.timezone}
+          language={data.user.language}
+        />
+      ),
     },
     { accessorKey: "quantity", header: t("position") },
     {
@@ -433,62 +455,74 @@ export function HistoryPage({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <button aria-expanded={filters} onClick={() => setFilters(!filters)}>
-          {t("filters")}
-        </button>
-        <button onClick={() => exportCSV(rows, "history.csv")}>
-          {t("export")}
-        </button>
-      </div>
-      {filters && (
-        <div className="filter-panel">
-          <label>
-            {t("reason")}
-            <select value={reason} onChange={(e) => setReason(e.target.value)}>
-              <option value="">—</option>
-              {["stop_loss", "take_profit", "manual", "unknown"].map((r) => (
-                <option key={r} value={r}>
-                  {t(
-                    (
-                      {
-                        stop_loss: "stopLoss",
-                        take_profit: "takeProfit",
-                        manual: "manual",
-                        unknown: "unclassified",
-                      } as const
-                    )[r as "stop_loss" | "take_profit" | "manual" | "unknown"],
-                  )}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            {t("from")}
-            <input
-              type="date"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-            />
-          </label>
-          <label>
-            {t("to")}
-            <input
-              type="date"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-            />
-          </label>
-          <button
-            onClick={() => {
+        <div className="table-tools">
+          <TableFilters
+            t={t}
+            count={[reason, from, to].filter(Boolean).length}
+            results={rows.length}
+            onClear={() => {
               setReason("");
               setFrom("");
               setTo("");
             }}
           >
-            {t("clear")}
+            <div className="filter-fields">
+              <label>
+                {t("reason")}
+                <select
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                >
+                  <option value="">{t("allChoices")}</option>
+                  {["stop_loss", "take_profit", "manual", "unknown"].map(
+                    (r) => (
+                      <option key={r} value={r}>
+                        {t(
+                          (
+                            {
+                              stop_loss: "stopLoss",
+                              take_profit: "takeProfit",
+                              manual: "manual",
+                              unknown: "unclassified",
+                            } as const
+                          )[
+                            r as
+                              "stop_loss" | "take_profit" | "manual" | "unknown"
+                          ],
+                        )}
+                      </option>
+                    ),
+                  )}
+                </select>
+              </label>
+              <label>
+                {t("from")}
+                <input
+                  type="date"
+                  value={from}
+                  onChange={(e) => setFrom(e.target.value)}
+                />
+              </label>
+              <label>
+                {t("to")}
+                <input
+                  type="date"
+                  value={to}
+                  onChange={(e) => setTo(e.target.value)}
+                />
+              </label>
+            </div>
+          </TableFilters>
+          <button
+            className="table-tool icon-button"
+            aria-label={t("export")}
+            title={t("export")}
+            onClick={() => exportCSV(rows, "history.csv")}
+          >
+            <Download size={17} />
           </button>
         </div>
-      )}
+      </div>
       <DataTable
         data={rows}
         columns={columns}
@@ -502,6 +536,64 @@ export function HistoryPage({
       />
       {!rows.length && <p className="empty">{t("noData")}</p>}
     </section>
+  );
+}
+function TableFilters({
+  t,
+  count,
+  results,
+  onClear,
+  children,
+}: {
+  t: T;
+  count: number;
+  results: number;
+  onClear: () => void;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Dialog.Root open={open} onOpenChange={setOpen}>
+      <Dialog.Trigger asChild>
+        <button
+          className={`table-tool icon-button filter-trigger ${count ? "has-filters" : ""}`}
+          aria-label={t("filters")}
+          title={t("filters")}
+        >
+          <SlidersHorizontal size={15} />
+          {count > 0 && <span className="filter-count">{count}</span>}
+        </button>
+      </Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Overlay className="modal-backdrop" />
+        <Dialog.Content
+          className="table-filter-dialog"
+          aria-describedby={undefined}
+        >
+          <div className="filter-heading">
+            <Dialog.Title asChild>
+              <h2>{t("filters")}</h2>
+            </Dialog.Title>
+            <Dialog.Close asChild>
+              <button className="icon-button" aria-label={t("close")}>
+                <X size={17} />
+              </button>
+            </Dialog.Close>
+          </div>
+          {children}
+          <div className="filter-footer">
+            <button onClick={onClear} disabled={!count}>
+              {t("clear")}
+            </button>
+            <Dialog.Close asChild>
+              <button className="primary">
+                {t("showResults")} ({results})
+              </button>
+            </Dialog.Close>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
 function TradeDetails({

@@ -21,8 +21,10 @@ export type UserDTO = {
 export type State = {
   user: UserDTO;
   account:
-    | (Omit<Account, "syncedAt"> & {
+    | (Omit<Account, "syncedAt" | "historySyncedAt" | "barsSyncedAt"> & {
         syncedAt: string | null;
+        historySyncedAt: string | null;
+        barsSyncedAt: string | null;
         scenarios: ScenarioDTO[];
         snapshots: { at: string; nlv: number }[];
         trades: TradeDTO[];

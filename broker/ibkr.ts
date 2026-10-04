@@ -53,29 +53,55 @@ export class IBKRAdapter implements BrokerAdapter {
       .parse(await this.get("/iserver/auth/status"));
     return auth.authenticated && auth.connected;
   }
-  async history(conid: string) {
+  async history(conid: string, options: { from?: Date; to?: Date } = {}) {
     if (!/^\d+$/.test(conid)) throw Error("Invalid contract ID");
-    const response = z
-      .object({
-        data: z.array(
-          z.object({ t: number, o: number, h: number, l: number, c: number }),
-        ),
-      })
-      .parse(
-        await this.get(
-          `/iserver/marketdata/history?${new URLSearchParams({ conid, period: "1y", bar: "1d", outsideRth: "false" })}`,
-        ),
-      );
-    return response.data
-      .map((b) => ({
-        time: new Date(b.t).toISOString().slice(0, 10),
-        open: b.o,
-        high: b.h,
-        low: b.l,
-        close: b.c,
-      }))
-      .sort((a, b) => a.time.localeCompare(b.time))
-      .filter((b, i, a) => i === 0 || b.time !== a[i - 1].time);
+    const cursor = new Date(options.to ?? new Date());
+    const fallback = new Date(cursor);
+    fallback.setUTCFullYear(fallback.getUTCFullYear() - 1);
+    const from = options.from ?? fallback;
+    if (!Number.isFinite(+cursor) || !Number.isFinite(+from))
+      throw Error("Invalid historical date range");
+    const bars = new Map<
+      string,
+      { time: string; open: number; high: number; low: number; close: number }
+    >();
+    // Annual windows stay below IBKR's 1000-point response cap for daily bars.
+    for (let page = 0; page < 15 && cursor > from; page++) {
+      const startTime = cursor
+        .toISOString()
+        .slice(0, 19)
+        .replaceAll("-", "")
+        .replace("T", "-");
+      const response = z
+        .object({
+          data: z.array(
+            z.object({ t: number, o: number, h: number, l: number, c: number }),
+          ),
+        })
+        .parse(
+          await this.get(
+            `/iserver/marketdata/history?${new URLSearchParams({ conid, period: "1y", bar: "1d", outsideRth: "false", startTime, direction: "-1" })}`,
+          ),
+        );
+      for (const b of response.data) {
+        const at = new Date(b.t);
+        if (
+          !Number.isFinite(+at) ||
+          at > (options.to ?? new Date()) ||
+          b.h < Math.max(b.o, b.c, b.l) ||
+          b.l > Math.min(b.o, b.c)
+        )
+          throw Error("Invalid historical price data");
+        const time = at.toISOString().slice(0, 10);
+        bars.set(time, { time, open: b.o, high: b.h, low: b.l, close: b.c });
+      }
+      cursor.setUTCFullYear(cursor.getUTCFullYear() - 1);
+    }
+    return [...bars.values()]
+      .filter(
+        (b) => new Date(b.time) >= new Date(from.toISOString().slice(0, 10)),
+      )
+      .sort((a, b) => a.time.localeCompare(b.time));
   }
   async snapshot(accountId: string): Promise<BrokerSnapshot> {
     if (!/^[A-Za-z0-9_-]+$/.test(accountId))

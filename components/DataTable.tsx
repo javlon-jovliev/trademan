@@ -38,7 +38,6 @@ export function DataTable<T>({
   });
   return (
     <>
-      <p className="table-hint">{t("tableHint")}</p>
       <div
         className="table-scroll"
         role="region"

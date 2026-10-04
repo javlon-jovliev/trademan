@@ -2,6 +2,8 @@ import "dotenv/config";
 import { db } from "../server/db";
 import { syncAccount, syncHistory, syncBars } from "../server/portfolio";
 let stopped = false;
+const historyAttempts = new Map<string, number>();
+const barsAttempts = new Map<string, number>();
 process.on("SIGTERM", () => {
   stopped = true;
 });
@@ -14,16 +16,37 @@ async function run() {
     for (const a of accounts) {
       try {
         await syncAccount(a.id);
-        if (
-          a.mode === "live" &&
-          process.env.IBKR_FLEX_TOKEN &&
-          (!a.historySyncedAt || Date.now() - +a.historySyncedAt > 6 * 3600000)
-        ) {
-          await syncHistory(a.id);
-          await syncBars(a.id);
-        }
       } catch {
-        console.error(`Sync failed for account ${a.id}`);
+        console.error(`Broker sync failed for account ${a.id}`);
+      }
+      if (a.mode !== "live") continue;
+      const now = Date.now();
+      let historyChanged = false;
+      if (
+        (!a.historySyncedAt || now - +a.historySyncedAt > 6 * 3600000) &&
+        now - (historyAttempts.get(a.id) ?? 0) > 15 * 60000
+      ) {
+        historyAttempts.set(a.id, now);
+        try {
+          await syncHistory(a.id);
+          historyChanged = true;
+        } catch {
+          console.error(`History sync failed for account ${a.id}`);
+        }
+      }
+      // Candle retries are independent of Flex availability and report completion.
+      if (
+        (historyChanged ||
+          !a.barsSyncedAt ||
+          now - +a.barsSyncedAt > 6 * 3600000) &&
+        now - (barsAttempts.get(a.id) ?? 0) > 15 * 60000
+      ) {
+        barsAttempts.set(a.id, now);
+        try {
+          await syncBars(a.id);
+        } catch {
+          console.error(`Historical prices sync failed for account ${a.id}`);
+        }
       }
     }
     await new Promise((r) =>

@@ -50,6 +50,8 @@ model Account {
   syncError         String?
   historyError      String?
   historySyncedAt   DateTime?
+  barsSyncedAt      DateTime?
+  barsError         String?
   activeScenarioId  String?
   nlv               Float?
   cash              Float?

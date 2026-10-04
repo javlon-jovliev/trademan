@@ -2,6 +2,7 @@
 import { useState } from "react";
 import type { State } from "./types";
 import type { T, Action } from "./Platform";
+import { DateTime } from "./DateTime";
 import type { Key } from "@/i18n/dictionaries";
 export function SettingsPage({
   data,
@@ -202,9 +203,15 @@ NODE_EXTRA_CA_CERTS=PATH_TO_TRUSTED_GATEWAY_CERTIFICATE`}</pre>
                 </p>
                 <p className="muted">
                   {t("lastSync")}:{" "}
-                  {data.account.syncedAt
-                    ? new Date(data.account.syncedAt).toLocaleString()
-                    : "—"}
+                  {data.account.syncedAt ? (
+                    <DateTime
+                      value={data.account.syncedAt}
+                      timeZone={data.account.timezone}
+                      language={data.user.language}
+                    />
+                  ) : (
+                    "—"
+                  )}
                 </p>
                 {data.account.syncError && (
                   <p className="negative">{data.account.syncError}</p>
@@ -264,61 +271,62 @@ NODE_EXTRA_CA_CERTS=PATH_TO_TRUSTED_GATEWAY_CERTIFICATE`}</pre>
             </form>
           )}
           {data.account && (
-            <details className="advanced-imports">
-              <summary>{t("advancedImports")}</summary>
-              <div className="imports">
-                {!data.demo && (
-                  <>
-                    <button
-                      onClick={() => action("history/sync", {}).catch(() => {})}
-                    >
-                      IBKR Flex · {t("sync")}
-                    </button>
-                    <button
-                      onClick={() =>
-                        action("history/bars-sync", {}).catch(() => {})
-                      }
-                    >
-                      OHLC · {t("sync")}
-                    </button>
-                    {data.account?.historyError && (
-                      <p className="negative">{data.account.historyError}</p>
-                    )}
-                  </>
-                )}
-                <label>
-                  {t("importTrades")}
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      const csv = await file.text();
-                      action("history/import", { csv }).catch(() => {});
-                    }}
-                  />
-                </label>
-                <p className="muted">{t("historyImportHelp")}</p>
-                <small>{t("importHelp")}</small>
-                <label>
-                  OHLC CSV
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      action("history/bars", { csv: await file.text() }).catch(
-                        () => {},
-                      );
-                    }}
-                  />
-                </label>
-                <p className="muted">{t("ohlcHelp")}</p>
-                <small>symbol,time,open,high,low,close</small>
-              </div>
-            </details>
+            <section className="automatic-history">
+              <h3>{t("automaticHistory")}</h3>
+              <p className="muted">{t("automaticHistoryHelp")}</p>
+              {data.demo ? (
+                <p className="muted">{t("demoHistoryHelp")}</p>
+              ) : (
+                <>
+                  <div className="automatic-sync-grid">
+                    {(
+                      [
+                        [
+                          "tradeHistory",
+                          data.account.historySyncedAt,
+                          data.account.historyError,
+                        ],
+                        [
+                          "priceHistory",
+                          data.account.barsSyncedAt,
+                          data.account.barsError,
+                        ],
+                      ] as const
+                    ).map(([key, at, error]) => (
+                      <div key={key}>
+                        <span>{t(key)}</span>
+                        {at ? (
+                          <DateTime
+                            value={at}
+                            timeZone={data.account!.timezone}
+                            language={data.user.language}
+                          />
+                        ) : (
+                          <small>{t("waitingSync")}</small>
+                        )}
+                        {error && (
+                          <p className="negative">
+                            {t(
+                              key === "tradeHistory"
+                                ? "historySetupNeeded"
+                                : "pricesSetupNeeded",
+                            )}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <details>
+                    <summary>{t("setupDetails")}</summary>
+                    <p className="muted">{t("flexSetupHelp")}</p>
+                    <pre>
+                      IBKR_FLEX_TOKEN=YOUR_FLEX_TOKEN{`\n`}
+                      IBKR_FLEX_QUERY_ID=YOUR_QUERY_ID
+                    </pre>
+                  </details>
+                </>
+              )}
+            </section>
           )}
         </>
       )}

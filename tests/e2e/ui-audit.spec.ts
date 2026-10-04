@@ -172,6 +172,9 @@ test("filters and settings/editor subviews remain accessible", async ({
           .analyze()
       ).violations.map((v) => v.id),
     ).toEqual([]);
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
   }
   for (const route of ["scenarios/new", "settings"]) {
     await page.goto(`/${route}`);
