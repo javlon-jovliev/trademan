@@ -1,5 +1,6 @@
 import "dotenv/config";
-import { db } from "../server/db";
+import { db, demoMode } from "../server/db";
+import { IBKRAdapter } from "../broker/ibkr";
 import {
   syncAccount,
   syncHistory,
@@ -88,7 +89,22 @@ async function quotesLoop() {
     await new Promise((resolve) => setTimeout(resolve, 10000));
   }
 }
-Promise.all([run(), quotesLoop()])
+async function keepAliveLoop() {
+  if (demoMode()) return;
+  let failed = false;
+  while (!stopped) {
+    try {
+      await new IBKRAdapter().keepAlive();
+      failed = false;
+    } catch {
+      if (!failed)
+        console.error("IBKR keep-alive unavailable; check Gateway login");
+      failed = true;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 60000));
+  }
+}
+Promise.all([run(), quotesLoop(), keepAliveLoop()])
   .finally(() => db.$disconnect())
   .catch(() => {
     stopped = true;

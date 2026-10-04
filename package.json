@@ -18,7 +18,8 @@
     "local:pglite": "tsx --env-file=.env scripts/pglite-db.ts",
     "test:api": "playwright test tests/e2e/api.spec.ts",
     "format": "prettier --write app components server broker risk notifications i18n scripts tests",
-    "audit:performance": "node scripts/ui-performance.mjs"
+    "audit:performance": "node scripts/ui-performance.mjs",
+    "local:live": "node scripts/start-local-live.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.0",

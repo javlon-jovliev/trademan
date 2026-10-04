@@ -75,7 +75,7 @@ OHLC sync automatically backfills daily bars to the oldest known opening executi
 
 ## Import formats
 
-In Settings → Connections, upload UTF-8 CSV (max 2 MB, 5,000 rows). Quoted fields and CRLF are supported. Imports validate all rows before writing and trade upserts are transactional.
+The main interface uses automatic broker/Flex/candle synchronization. CSV uploads are not required or exposed in Connections. Legacy authenticated API imports remain available for compatibility (UTF-8, max 2 MB and 5,000 rows); they validate all rows before writing and trade upserts are transactional.
 
 Closed trades:
 
@@ -157,3 +157,12 @@ Slippage is already in the execution price and is **not deducted again** from re
 ### Value explanations
 
 Ambiguous financial indicators have localized Uzbek/English explanations on hover and keyboard focus. Small information buttons also open them on touch devices. Explanations include the calculation, units, broker timezone, missing-data meaning and slippage coverage. Tooltips use a viewport-bounded portal, dismiss with Escape, and allow the pointer to move into their text. Explanatory paragraphs have been removed from the KPI and trade-analysis cards. The dashboard uses neutral individual KPI cards; portfolio drawers have an icon close control and compact save action.
+
+
+## Private Mac live runtime
+
+`pnpm local:live` reads the ignored `.env.live`, starts native PostgreSQL, applies migrations, seeds a fresh admin, verifies IBKR account ownership, and starts ERTA + worker with a localhost-only HTTPS proxy. Demo data remains in the separate development database. Build first with `pnpm build`. Use native PostgreSQL outside a restricted agent sandbox; PGlite is for development only.
+
+Required private `.env.live` values: `DEMO_MODE=false`, `DATABASE_URL=postgresql://erta:<strong-password>@127.0.0.1:55433/erta_live`, `APP_ORIGIN=https://localhost:3443`, strong `SEED_PASSWORD`, `IBKR_ACCOUNT_ID`, `IBKR_GATEWAY_URL=https://localhost:5001/v1/api`, `LOCAL_TLS_CERT`, `LOCAL_TLS_KEY`, `NODE_EXTRA_CA_CERTS`, `LOCAL_JAVA`, and `LOCAL_GATEWAY_DIR`. Use absolute file paths for the official Gateway, Java runtime and a valid localhost certificate. Configure Gateway TLS with that certificate; restrict allowed IPs to loopback. The bootstrap passes the certificate trust variable before Node starts; it never disables TLS verification.
+
+Log in through the official Gateway browser on this Mac, with 2FA. IBKR requires daily reauthentication and does not support automated Gateway login. Once an account is connected, expired login does not prevent ERTA startup; the worker resumes synchronization after browser login. A separate once-per-minute Gateway keep-alive runs independently of slow Flex/history requests; it does not bypass daily authentication. Do not run multiple live launchers. Private logs are in `data/live-logs`; Ctrl+C gracefully stops owned services. Keep the Mac awake and the launcher running for updates; this is not an unattended 24/7 cloud deployment. Back up native PostgreSQL before updates. Never publish Gateway ports or local private keys. Flex credentials are additionally required for automatic execution history and commission analysis.

@@ -39,13 +39,23 @@ export class IBKRAdapter implements BrokerAdapter {
     this.base = url.replace(/\/$/, "");
   }
   private async get(path: string): Promise<unknown> {
+    const isAuth = path === "/iserver/auth/status";
     const r = await fetch(`${this.base}${path}`, {
       signal: AbortSignal.timeout(15000),
       cache: "no-store",
-      method: path === "/iserver/auth/status" ? "POST" : "GET",
+      method: isAuth ? "POST" : "GET",
+      headers: {
+        "User-Agent": "ERTA/1.0",
+        ...(isAuth ? { "Content-Type": "application/json" } : {}),
+      },
+      ...(isAuth ? { body: "{}" } : {}),
     });
     if (!r.ok) throw Error(`IBKR HTTP ${r.status}`);
     return r.json();
+  }
+  async keepAlive() {
+    // Gateway keep-alive does not authenticate, switch accounts or modify orders.
+    await this.get("/tickle");
   }
   async connectionStatus() {
     const auth = z
@@ -186,7 +196,7 @@ export class IBKRAdapter implements BrokerAdapter {
     const summary = z
       .record(
         z.string(),
-        z.object({ amount: number.nullish(), currency: z.string().optional() }),
+        z.object({ amount: number.nullish(), currency: z.string().nullish() }),
       )
       .parse(await this.get(`/portfolio/${accountId}/summary`));
     const base = ledger.BASE;

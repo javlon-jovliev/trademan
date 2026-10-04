@@ -13,6 +13,7 @@ it("reads paginated broker data and preserves unknown FX", async () => {
     {
       netliquidation: { amount: 100000, currency: "USD" },
       buyingpower: { amount: 200000 },
+      accounttype: { currency: null },
     },
     [
       {
@@ -35,6 +36,11 @@ it("reads paginated broker data and preserves unknown FX", async () => {
   expect(r.positions[0].fx).toBeNull();
   expect(r.nlv).toBe(100000);
   expect(mock.mock.calls[0][1].method).toBe("POST");
+  expect(mock.mock.calls[0][1].body).toBe("{}");
+  expect(mock.mock.calls[0][1].headers).toEqual({
+    "User-Agent": "ERTA/1.0",
+    "Content-Type": "application/json",
+  });
   expect(
     mock.mock.calls.every(([url]) => !String(url).includes("/orders")),
   ).toBe(true);
@@ -159,4 +165,17 @@ it("ignores crossed, frozen, future and stale quotes and accepts pre-flight with
     );
     expect(await new IBKRAdapter().quotes("U1", ["1"])).toEqual([]);
   }
+});
+
+it("keeps the Gateway session alive without authenticating or placing orders", async () => {
+  vi.stubEnv("IBKR_GATEWAY_URL", "https://localhost:5001/v1/api");
+  const fetcher = vi.fn<typeof fetch>();
+  fetcher.mockResolvedValue(new Response("{}", { status: 200 }));
+  vi.stubGlobal("fetch", fetcher);
+  await new IBKRAdapter().keepAlive();
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  expect(fetcher.mock.calls[0]?.[0]).toBe(
+    "https://localhost:5001/v1/api/tickle",
+  );
+  expect(fetcher.mock.calls[0]?.[1]?.method).toBe("GET");
 });
