@@ -273,3 +273,61 @@ test("compact account menu, notification menu and session request failure", asyn
     });
   }
 });
+
+test("large alert lists paginate and read alerts remain available", async ({
+  page,
+}) => {
+  await page.request.post("/api/login", {
+    headers: { Origin: origin },
+    data: {
+      username: process.env.SEED_USERNAME ?? "admin",
+      password: process.env.SEED_PASSWORD,
+    },
+  });
+  const state = await (await page.request.get("/api/state")).json();
+  state.user.language = "en";
+  state.account.alerts = Array.from({ length: 14 }, (_, i) => ({
+    id: `audit-alert-${i}`,
+    accountId: state.account.id,
+    key: `sector:Example ${i}`,
+    severity: "warning",
+    message: `Example ${i}: 30 / 35`,
+    active: true,
+    acknowledged: false,
+    createdAt: new Date().toISOString(),
+  }));
+  await page.route("**/api/state", (route) => route.fulfill({ json: state }));
+  await page.route("**/api/alert/ack", (route) => {
+    const { id } = route.request().postDataJSON();
+    state.account.alerts.find((a: { id: string }) => a.id === id).acknowledged =
+      true;
+    return route.fulfill({ json: { ok: true } });
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/dashboard");
+  await page.getByRole("button", { name: "Alerts (14)", exact: true }).click();
+  await expect(page.locator(".notification-item")).toHaveCount(10);
+  const menu = await page.locator(".notifications-menu").boundingBox();
+  expect(menu!.height).toBeLessThanOrEqual(480);
+  expect(menu!.x + menu!.width).toBeLessThanOrEqual(390);
+  await page
+    .getByRole("menuitem", { name: "Show more (4)", exact: true })
+    .click();
+  await expect(page.locator(".notification-item")).toHaveCount(14);
+  await page.locator(".notification-item").first().click();
+  await expect(
+    page.getByRole("button", { name: "Alerts (13)", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("menuitemradio", { name: "Read (1)", exact: true })
+    .click();
+  await expect(page.locator(".notification-item")).toHaveCount(1);
+  await expect(page.locator(".notification-item")).toContainText("Example 0");
+  expect(
+    (
+      await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+        .analyze()
+    ).violations.map((v) => v.id),
+  ).toEqual([]);
+});

@@ -6,7 +6,7 @@ import { fetchFlex } from "../broker/flex";
 import { matchLots } from "../broker/lots";
 import { sendTelegram } from "../notifications/telegram";
 export async function accountFor(userId: string) {
-  return db.account.findFirst({
+  const account = await db.account.findFirst({
     where: { userId, mode: demoMode() ? "demo" : "live" },
     include: {
       positions: true,
@@ -16,6 +16,16 @@ export async function accountFor(userId: string) {
       alerts: { where: { active: true }, orderBy: { createdAt: "desc" } },
     },
   });
+  if (!account) return null;
+  const history = await db.alert.findMany({
+    where: { accountId: account.id, acknowledged: true, active: false },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+  });
+  account.alerts = [...account.alerts, ...history].sort(
+    (a, b) => +b.createdAt - +a.createdAt,
+  );
+  return account;
 }
 export async function refreshAlerts(accountId: string) {
   const account = await db.account.findUniqueOrThrow({

@@ -588,7 +588,11 @@ function Dashboard({ data, t }: { data: State; t: T; action: Action }) {
         <section className="panel">
           <h2>{t("allocation")}</h2>
           {Object.entries(risk.assets).map(([name, v]) => (
-            <Exposure key={name} name={name} value={v} />
+            <Exposure
+              key={name}
+              name={name === "STK" ? t("stocks") : name}
+              value={v}
+            />
           ))}
           <Exposure
             name={t("cash")}

@@ -212,6 +212,11 @@ export const en = {
   heatHelp: "Estimated portfolio loss if risk stops are reached.",
   riskHelp: "Each bar shows how much of the scenario limit is used.",
   withinLimit: "Within limit",
+  unreadAlerts: "Unread",
+  readAlerts: "Read",
+  moreAlerts: "Show more",
+  readAlertHelp:
+    "Reading an alert does not resolve the risk. Includes the latest 100 read alerts whose condition has cleared.",
   postExitHelp:
     "Post-exit analytics require historical OHLC data. Values use account currency and the recorded FX rate.",
   unpriced: "Some position prices or FX rates are unavailable",
@@ -434,6 +439,11 @@ export const uz: Record<Key, string> = {
   riskHelp:
     "Har bir chiziq senariy limitining qancha qismi ishlatilganini ko‘rsatadi.",
   withinLimit: "Limit ichida",
+  unreadAlerts: "O‘qilmagan",
+  readAlerts: "O‘qilgan",
+  moreAlerts: "Ko‘proq ko‘rish",
+  readAlertHelp:
+    "Alertni o‘qish riskni bartaraf etmaydi. Risk holati tugagan o‘qilgan alertlardan oxirgi 100 tasi saqlanib ko‘rsatiladi.",
   postExitHelp:
     "Chiqishdan keyingi tahlil uchun tarixiy OHLC kerak. Qiymatlar akkaunt valyutasi va qayd etilgan FX bo‘yicha hisoblanadi.",
   unpriced: "Ayrim pozitsiyalarda narx yoki FX ma’lumoti yo‘q",

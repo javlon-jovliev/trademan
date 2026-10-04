@@ -32,7 +32,7 @@ test("authentication, portfolio, history, scenarios and preferences", async ({
   ).toBeVisible();
   await page.getByRole("cell", { name: "TSLA", exact: true }).click();
   await expect(
-    page.getByText("Saqlanganda P&L", { exact: true }),
+    page.getByText("Ushlab turilgandagi natija", { exact: true }),
   ).toBeVisible();
   await page.goto("/scenarios/new");
   await page.getByLabel("Nomi", { exact: true }).fill("E2E policy");
