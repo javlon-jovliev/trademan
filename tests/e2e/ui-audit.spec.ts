@@ -424,7 +424,7 @@ test("compact table tools filter rows, reset criteria and export filtered result
     .click();
   await page
     .getByRole("dialog")
-    .getByLabel(/Reason|Sabab/, { exact: true })
+    .getByLabel(/Reason|Yopilish sababi/, { exact: true })
     .selectOption("stop_loss");
   await page.getByRole("dialog").locator(".filter-footer .primary").click();
   await expect(page.locator("tbody > tr")).toHaveCount(1);

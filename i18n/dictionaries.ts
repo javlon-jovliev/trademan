@@ -1,4 +1,9 @@
 export const en = {
+  positionDailyHelp:
+    "Position price change since the previous close × signed quantity × multiplier × FX. In account currency. Missing previous close stays unavailable.",
+  averagePriceHelp:
+    "Broker average entry cost in instrument currency. It may include commission; ERTA does not subtract commission again from P&L calculated from this cost.",
+
   executionCosts: "Execution costs",
   commissionCost: "Commission",
   slippageCost: "Measured slippage",
@@ -264,6 +269,11 @@ export const en = {
 export type Key = keyof typeof en;
 export const uz: Record<Key, string> = {
   ...en,
+  positionDailyHelp:
+    "Pozitsiya narxining avvalgi yopilishdan o‘zgarishi × miqdor × multiplier × FX. Akkaunt valyutasida. Avvalgi yopilish narxi bo‘lmasa ko‘rsatilmaydi.",
+  averagePriceHelp:
+    "Brokerning o‘rtacha kirish tannarxi, aktiv valyutasida. U komissiyani o‘z ichiga olishi mumkin; bu tannarx asosidagi P&L’dan komissiya qayta ayirilmaydi.",
+
   executionCosts: "Savdo xarajatlari",
   commissionCost: "Komissiya",
   slippageCost: "O‘lchangan slippage",

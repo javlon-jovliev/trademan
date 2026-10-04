@@ -10,6 +10,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { Info } from "lucide-react";
+import type { Key } from "@/i18n/dictionaries";
 import { valueExplanation } from "@/risk/definitions";
 const HelpContext = createContext({
   language: "uz" as "uz" | "en",
@@ -44,11 +45,13 @@ export function ValueHelp({
   children,
   icon = false,
   help,
+  definition,
 }: {
   label?: string;
   children: ReactNode;
   icon?: boolean;
   help?: string;
+  definition?: Key;
 }) {
   const context = useContext(HelpContext);
   const text =
@@ -59,6 +62,7 @@ export function ValueHelp({
           context.language,
           context.currency,
           context.timezone,
+          definition,
         )
       : undefined);
   const id = useId(),

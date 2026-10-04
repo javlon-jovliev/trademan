@@ -26,3 +26,10 @@ it("explains ambiguous financial values in both languages with account units", (
   );
   expect(valueExplanation("UNKNOWN LABEL", "en")).toBeUndefined();
 });
+
+it("distinguishes per-position risk from total portfolio heat even when their displayed names coincide", () => {
+  expect(
+    valueExplanation(uz.riskTab, "uz", "USD", "America/New_York", "riskTab"),
+  ).toContain("Shu pozitsiyaning");
+  expect(valueExplanation(uz.heat, "uz")).toContain("Barcha pozitsiyalar");
+});

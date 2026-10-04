@@ -41,6 +41,12 @@ export function Portfolio({
   const [selected, setSelected] = useState<Row | null>(null);
   const risk = data.risk;
   const currency = data.account?.currency;
+  const drawerHelp = (key: unknown) =>
+    key === "daily"
+      ? t("positionDailyHelp")
+      : key === "entry"
+        ? t("averagePriceHelp")
+        : undefined;
   const policy = data.account?.scenarios.find(
     (s) => s.id === data.account?.activeScenarioId,
   );
@@ -355,16 +361,30 @@ export function Portfolio({
                   ["heat", percent(selected.heat)],
                   ["maxTradeRisk", percent(policy?.maxTradeRisk)],
                   ["sector", selected.sector],
-                  ["sectorLimit", percent(risk.sectors[selected.sector])],
+                  [
+                    "sectorLimit",
+                    percent(
+                      (policy?.sectorLimits as Record<string, number>)?.[
+                        selected.sector
+                      ] ?? policy?.sectorLimit,
+                    ),
+                  ],
                 ].map(([key, v]) => (
                   <div className="dl-row" key={key}>
                     <dt>
-                      <ValueHelp icon label={t(key as Parameters<T>[0])}>
+                      <ValueHelp
+                        icon
+                        label={t(key as Parameters<T>[0])}
+                        help={drawerHelp(key)}
+                      >
                         {t(key as Parameters<T>[0])}
                       </ValueHelp>
                     </dt>
                     <dd>
-                      <ValueHelp label={t(key as Parameters<T>[0])}>
+                      <ValueHelp
+                        label={t(key as Parameters<T>[0])}
+                        help={drawerHelp(key)}
+                      >
                         {v}
                       </ValueHelp>
                     </dd>

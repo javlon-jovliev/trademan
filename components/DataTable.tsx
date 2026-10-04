@@ -61,6 +61,9 @@ export function DataTable<T>({
                     }
                   >
                     <ValueHelp
+                      definition={
+                        h.column.id === "heat" ? "riskTab" : undefined
+                      }
                       label={
                         typeof h.column.columnDef.header === "string"
                           ? h.column.columnDef.header
@@ -108,6 +111,9 @@ export function DataTable<T>({
                   {r.getVisibleCells().map((c) => (
                     <td key={c.id}>
                       <ValueHelp
+                        definition={
+                          c.column.id === "heat" ? "riskTab" : undefined
+                        }
                         label={
                           typeof c.column.columnDef.header === "string"
                             ? c.column.columnDef.header

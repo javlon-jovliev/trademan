@@ -222,11 +222,12 @@ export function valueExplanation(
   language: "uz" | "en",
   currency = "USD",
   timezone = "America/New_York",
+  definition?: Key,
 ) {
   const dict = language === "en" ? en : uz;
-  const key = (Object.keys(definitions) as Key[]).find(
-    (k) => dict[k] === label,
-  );
+  const key =
+    definition ??
+    (Object.keys(definitions) as Key[]).find((k) => dict[k] === label);
   const text = key ? definitions[key]?.[language === "en" ? 0 : 1] : undefined;
   return text
     ?.replaceAll("{currency}", currency)
