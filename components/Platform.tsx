@@ -1,4 +1,6 @@
 "use client";
+import { HelpProvider, ValueHelp } from "./ValueHelp";
+import { CostsPanel } from "./Costs";
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -43,8 +45,12 @@ export const percent = (v: number | null | undefined) =>
 export function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="metric">
-      <span>{label}</span>
-      <strong>{value}</strong>
+      <ValueHelp label={label} icon>
+        {label}
+      </ValueHelp>
+      <ValueHelp label={label}>
+        <strong>{value}</strong>
+      </ValueHelp>
     </div>
   );
 }
@@ -202,169 +208,177 @@ export default function Platform({ route }: { route: string }) {
   };
   const account = data.account;
   return (
-    <div
-      className={`shell ${data.user.collapsed ? "collapsed" : ""} ${drawer ? "drawer-open" : ""}`}
+    <HelpProvider
+      language={data.user.language}
+      currency={account?.currency}
+      timezone={account?.timezone}
     >
-      <a className="skip-link" href="#main-content">
-        {t("skipContent")}
-      </a>
-      <aside
-        className="sidebar"
-        ref={sidebarRef}
-        inert={mobile && !drawer}
-        role={mobile && drawer ? "dialog" : undefined}
-        aria-modal={mobile && drawer ? true : undefined}
-        aria-label={t("navigation")}
-        id="navigation"
+      <div
+        className={`shell ${data.user.collapsed ? "collapsed" : ""} ${drawer ? "drawer-open" : ""}`}
       >
-        <div className="sidebar-head">
-          <Link href="/dashboard" className="brand" aria-label="ERTA">
-            <span className="logo">e</span>
-            <strong>ERTA</strong>
-          </Link>
-          <button
-            className="collapse"
-            aria-label={t("toggleMenu")}
-            onClick={() =>
-              preferences({ collapsed: !data.user.collapsed }).catch(() => {})
-            }
-          >
-            {data.user.collapsed ? (
-              <ChevronRight size={14} />
-            ) : (
-              <ChevronLeft size={14} />
-            )}
-          </button>
-        </div>
-        <button
-          className="mobile-close"
-          aria-label={t("close")}
-          onClick={() => setDrawer(false)}
+        <a className="skip-link" href="#main-content">
+          {t("skipContent")}
+        </a>
+        <aside
+          className="sidebar"
+          ref={sidebarRef}
+          inert={mobile && !drawer}
+          role={mobile && drawer ? "dialog" : undefined}
+          aria-modal={mobile && drawer ? true : undefined}
+          aria-label={t("navigation")}
+          id="navigation"
         >
-          ×
-        </button>
-        <nav aria-label={t("navigation")}>
-          {nav.map(({ key, icon: Icon }) => (
-            <Link
-              key={key}
-              href={`/${key}`}
-              onClick={() => setDrawer(false)}
-              title={t(key)}
-              aria-label={t(key)}
-              aria-current={section === key ? "page" : undefined}
-              className={section === key ? "selected" : ""}
-            >
-              <Icon size={19} />
-              <span>{t(key)}</span>
+          <div className="sidebar-head">
+            <Link href="/dashboard" className="brand" aria-label="ERTA">
+              <span className="logo">e</span>
+              <strong>ERTA</strong>
             </Link>
-          ))}
-        </nav>
-        <div className="sidebar-bottom">
-          <Link
-            href="/settings"
-            title={t("settings")}
-            aria-label={t("settings")}
-            aria-current={section === "settings" ? "page" : undefined}
-            onClick={() => setDrawer(false)}
-            className={section === "settings" ? "selected" : ""}
-          >
-            <Settings size={19} />
-            <span>{t("settings")}</span>
-          </Link>
-          <AccountMenu
-            user={data.user}
-            t={t}
-            onLanguage={(language) => preferences({ language }).catch(() => {})}
-            onLogout={async () => {
-              await action("logout", {}).catch(() => {});
-              router.replace("/login");
-            }}
-          />
-        </div>
-      </aside>
-      {drawer && (
-        <button
-          className="scrim"
-          aria-label={t("close")}
-          onClick={() => setDrawer(false)}
-        />
-      )}
-      <main
-        className="content"
-        id="main-content"
-        tabIndex={-1}
-        aria-busy={busy}
-        inert={mobile && drawer}
-      >
-        <header>
+            <button
+              className="collapse"
+              aria-label={t("toggleMenu")}
+              onClick={() =>
+                preferences({ collapsed: !data.user.collapsed }).catch(() => {})
+              }
+            >
+              {data.user.collapsed ? (
+                <ChevronRight size={14} />
+              ) : (
+                <ChevronLeft size={14} />
+              )}
+            </button>
+          </div>
           <button
-            className="mobile-menu"
-            ref={menuRef}
-            aria-label={t("navigation")}
-            aria-expanded={drawer}
-            aria-controls="navigation"
-            onClick={() => setDrawer(!drawer)}
+            className="mobile-close"
+            aria-label={t("close")}
+            onClick={() => setDrawer(false)}
           >
-            <Menu />
+            ×
           </button>
-          <h1>{t(section)}</h1>
-          <div className="header-tools">
-            <BrokerContext
-              account={account}
-              stale={data.stale}
-              demo={data.demo}
+          <nav aria-label={t("navigation")}>
+            {nav.map(({ key, icon: Icon }) => (
+              <Link
+                key={key}
+                href={`/${key}`}
+                onClick={() => setDrawer(false)}
+                title={t(key)}
+                aria-label={t(key)}
+                aria-current={section === key ? "page" : undefined}
+                className={section === key ? "selected" : ""}
+              >
+                <Icon size={19} />
+                <span>{t(key)}</span>
+              </Link>
+            ))}
+          </nav>
+          <div className="sidebar-bottom">
+            <Link
+              href="/settings"
+              title={t("settings")}
+              aria-label={t("settings")}
+              aria-current={section === "settings" ? "page" : undefined}
+              onClick={() => setDrawer(false)}
+              className={section === "settings" ? "selected" : ""}
+            >
+              <Settings size={19} />
+              <span>{t("settings")}</span>
+            </Link>
+            <AccountMenu
+              user={data.user}
               t={t}
+              onLanguage={(language) =>
+                preferences({ language }).catch(() => {})
+              }
+              onLogout={async () => {
+                await action("logout", {}).catch(() => {});
+                router.replace("/login");
+              }}
             />
-            <Notifications data={data} t={t} action={action} />
           </div>
-        </header>
-        {error && (
-          <div className="banner error" role="alert">
-            {error}
-            <button aria-label={t("close")} onClick={() => setError("")}>
-              ×
-            </button>
-          </div>
-        )}
-        {notice && (
-          <div className="save-toast" role="status">
-            {notice}
-            <button aria-label={t("close")} onClick={() => setNotice("")}>
-              ×
-            </button>
-          </div>
-        )}
-        {data.stale && (
-          <div className="banner error">
-            {t("stale")} · {account?.syncError}
-          </div>
-        )}
-        {route === "dashboard" && (
-          <Dashboard data={data} t={t} action={action} />
-        )}
-        {route === "portfolio" && (
-          <Portfolio data={data} t={t} action={action} />
-        )}
-        {route === "history" && (
-          <HistoryPage data={data} t={t} action={action} />
-        )}
-        {route === "scenarios" && (
-          <Scenarios data={data} t={t} action={action} />
-        )}
-        {route.startsWith("scenarios/") && (
-          <ScenarioEditor
-            key={route}
-            data={data}
-            t={t}
-            action={action}
-            id={route.split("/")[1]}
+        </aside>
+        {drawer && (
+          <button
+            className="scrim"
+            aria-label={t("close")}
+            onClick={() => setDrawer(false)}
           />
         )}
-        {route === "settings" && (
-          <SettingsPage data={data} t={t} action={action} />
-        )}
-      </main>
-    </div>
+        <main
+          className="content"
+          id="main-content"
+          tabIndex={-1}
+          aria-busy={busy}
+          inert={mobile && drawer}
+        >
+          <header>
+            <button
+              className="mobile-menu"
+              ref={menuRef}
+              aria-label={t("navigation")}
+              aria-expanded={drawer}
+              aria-controls="navigation"
+              onClick={() => setDrawer(!drawer)}
+            >
+              <Menu />
+            </button>
+            <h1>{t(section)}</h1>
+            <div className="header-tools">
+              <BrokerContext
+                account={account}
+                stale={data.stale}
+                demo={data.demo}
+                t={t}
+              />
+              <Notifications data={data} t={t} action={action} />
+            </div>
+          </header>
+          {error && (
+            <div className="banner error" role="alert">
+              {error}
+              <button aria-label={t("close")} onClick={() => setError("")}>
+                ×
+              </button>
+            </div>
+          )}
+          {notice && (
+            <div className="save-toast" role="status">
+              {notice}
+              <button aria-label={t("close")} onClick={() => setNotice("")}>
+                ×
+              </button>
+            </div>
+          )}
+          {data.stale && (
+            <div className="banner error">
+              {t("stale")} · {account?.syncError}
+            </div>
+          )}
+          {route === "dashboard" && (
+            <Dashboard data={data} t={t} action={action} />
+          )}
+          {route === "portfolio" && (
+            <Portfolio data={data} t={t} action={action} />
+          )}
+          {route === "history" && (
+            <HistoryPage data={data} t={t} action={action} />
+          )}
+          {route === "scenarios" && (
+            <Scenarios data={data} t={t} action={action} />
+          )}
+          {route.startsWith("scenarios/") && (
+            <ScenarioEditor
+              key={route}
+              data={data}
+              t={t}
+              action={action}
+              id={route.split("/")[1]}
+            />
+          )}
+          {route === "settings" && (
+            <SettingsPage data={data} t={t} action={action} />
+          )}
+        </main>
+      </div>
+    </HelpProvider>
   );
 }
 function BrokerContext({
@@ -489,30 +503,36 @@ function Dashboard({ data, t }: { data: State; t: T; action: Action }) {
           ] as const
         ).map((item) => (
           <div className="metric" key={item.label}>
-            <span>{t(item.label)}</span>
-            <strong
-              className={
-                item.pnl && item.value != null
+            <ValueHelp label={t(item.label)} icon>
+              {t(item.label)}
+            </ValueHelp>
+            <ValueHelp label={t(item.label)}>
+              <strong
+                className={
+                  item.pnl && item.value != null
+                    ? item.value >= 0
+                      ? "positive"
+                      : "negative"
+                    : ""
+                }
+              >
+                {item.pnl && item.value != null
                   ? item.value >= 0
-                    ? "positive"
-                    : "negative"
-                  : ""
-              }
-            >
-              {item.pnl && item.value != null
-                ? item.value >= 0
-                  ? "↗ "
-                  : "↘ "
-                : ""}
-              {money(item.value, currency)}
-            </strong>
-            <p className="kpi-help">{t(item.help)}</p>
+                    ? "↗ "
+                    : "↘ "
+                  : ""}
+                {money(item.value, currency)}
+              </strong>
+            </ValueHelp>
           </div>
         ))}
         <div className="metric">
-          <span>{t("heat")}</span>
-          <strong>{percent(risk.heat)}</strong>
-          <p className="kpi-help">{t("heatHelp")}</p>
+          <ValueHelp label={t("heat")} icon>
+            {t("heat")}
+          </ValueHelp>
+          <ValueHelp label={t("heat")}>
+            <strong>{percent(risk.heat)}</strong>
+          </ValueHelp>
           <span className="kpi-limit">
             {t("limitLabel")}: {percent(scenario?.maxHeat)}
           </span>
@@ -521,7 +541,11 @@ function Dashboard({ data, t }: { data: State; t: T; action: Action }) {
       <div className="dashboard-main">
         <section className="panel">
           <div className="panel-heading">
-            <h2>{t("equity")}</h2>
+            <h2>
+              <ValueHelp label={t("equity")} icon>
+                {t("equity")}
+              </ValueHelp>
+            </h2>
             <select
               aria-label={t("period")}
               value={period}
@@ -539,7 +563,11 @@ function Dashboard({ data, t }: { data: State; t: T; action: Action }) {
           />
         </section>
         <section className="panel">
-          <h2>{t("risk")}</h2>
+          <h2>
+            <ValueHelp label={t("risk")} icon help={t("riskHelp")}>
+              {t("risk")}
+            </ValueHelp>
+          </h2>
           <Badge status={risk.status} t={t} />
           {risk.violations.find((v) => v.severity === "breach") && (
             <p className="risk-reason">
@@ -550,7 +578,6 @@ function Dashboard({ data, t }: { data: State; t: T; action: Action }) {
             </p>
           )}
           <h3>{scenario?.name ?? t("noScenario")}</h3>
-          <p className="risk-help muted">{t("riskHelp")}</p>
           <RiskMeter
             label={t("heat")}
             value={risk.heat}
@@ -571,12 +598,20 @@ function Dashboard({ data, t }: { data: State; t: T; action: Action }) {
           />
           <div className="risk-funds">
             <div>
-              <span>{t("liquidity")}</span>
-              <strong>{money(account.excessLiquidity, currency)}</strong>
+              <ValueHelp label={t("liquidity")} icon>
+                {t("liquidity")}
+              </ValueHelp>
+              <ValueHelp label={t("liquidity")}>
+                <strong>{money(account.excessLiquidity, currency)}</strong>
+              </ValueHelp>
             </div>
             <div>
-              <span>{t("buyingPower")}</span>
-              <strong>{money(account.buyingPower, currency)}</strong>
+              <ValueHelp label={t("buyingPower")} icon>
+                {t("buyingPower")}
+              </ValueHelp>
+              <ValueHelp label={t("buyingPower")}>
+                <strong>{money(account.buyingPower, currency)}</strong>
+              </ValueHelp>
             </div>
           </div>
           {risk.riskIncreasingBlocked && (
@@ -584,17 +619,24 @@ function Dashboard({ data, t }: { data: State; t: T; action: Action }) {
           )}
         </section>
       </div>
+      <CostsPanel data={data} t={t} />
       <div className="dashboard-bottom">
         <section className="panel">
-          <h2>{t("allocation")}</h2>
+          <h2>
+            <ValueHelp label={t("allocation")} icon>
+              {t("allocation")}
+            </ValueHelp>
+          </h2>
           {Object.entries(risk.assets).map(([name, v]) => (
             <Exposure
+              t={t}
               key={name}
               name={name === "STK" ? t("stocks") : name}
               value={v}
             />
           ))}
           <Exposure
+            t={t}
             name={t("cash")}
             value={
               account.cash && account.nlv
@@ -604,9 +646,14 @@ function Dashboard({ data, t }: { data: State; t: T; action: Action }) {
           />
         </section>
         <section className="panel">
-          <h2>{t("sector")}</h2>
+          <h2>
+            <ValueHelp label={t("sector")} icon>
+              {t("sector")}
+            </ValueHelp>
+          </h2>
           {Object.entries(risk.sectors).map(([name, v]) => (
             <Exposure
+              t={t}
               key={name}
               name={name}
               value={v}
@@ -633,8 +680,12 @@ function Dashboard({ data, t }: { data: State; t: T; action: Action }) {
             .map((p) => (
               <div className="risk-row" key={p.id}>
                 <b>{p.symbol}</b>
-                <span>{money(p.value, currency)}</span>
-                <span>{percent(p.heat)}</span>
+                <ValueHelp label={t("value")}>
+                  <span>{money(p.value, currency)}</span>
+                </ValueHelp>
+                <ValueHelp label={t("riskTab")}>
+                  <span>{percent(p.heat)}</span>
+                </ValueHelp>
               </div>
             ))}
         </section>
@@ -666,10 +717,14 @@ function RiskMeter({
   return (
     <div className={`risk-meter ${tone}`}>
       <div>
-        <span>{label}</span>
-        <strong>
-          {percent(value)} <small>/ {percent(limit)}</small>
-        </strong>
+        <ValueHelp label={label} icon>
+          {label}
+        </ValueHelp>
+        <ValueHelp label={label}>
+          <strong>
+            {percent(value)} <small>/ {percent(limit)}</small>
+          </strong>
+        </ValueHelp>
       </div>
       <div className="risk-meter-track" aria-hidden="true">
         <span
@@ -692,10 +747,12 @@ function RiskMeter({
   );
 }
 function Exposure({
+  t,
   name,
   value,
   limit,
 }: {
+  t: T;
   name: string;
   value: number;
   limit?: number;
@@ -704,10 +761,12 @@ function Exposure({
     <div className="exposure">
       <div>
         <span>{name}</span>
-        <span>
-          {percent(value)}
-          {limit ? ` / ${percent(limit)}` : ""}
-        </span>
+        <ValueHelp label={t(limit ? "sector" : "allocation")}>
+          <span>
+            {percent(value)}
+            {limit ? ` / ${percent(limit)}` : ""}
+          </span>
+        </ValueHelp>
       </div>
       <div className="bar">
         <i

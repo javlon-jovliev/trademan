@@ -1,4 +1,29 @@
 export const en = {
+  executionCosts: "Execution costs",
+  commissionCost: "Commission",
+  slippageCost: "Measured slippage",
+  totalExecutionCost: "Total execution cost",
+  netExecutionPnl: "P&L after commission",
+  costCoverage: "Quote coverage",
+  costMissing: "Not enough data",
+  costRecords: "Imported executions",
+  costEquity: "of current equity",
+  costExplanation: "How these costs affect P&L",
+  costHelp:
+    "Commissions reduce returns. Slippage measures execution price versus a recorded pre-fill bid/ask midpoint: positive is a cost, negative is a price improvement. Slippage is already included in execution prices; ERTA does not subtract it again from P&L or broker equity.",
+  benchmarkHelp:
+    "Quotes are captured automatically every 10 seconds while the worker and Gateway are running. Only real-time quotes recorded before a fill, at most 30 seconds earlier, qualify. This is a sampled pre-fill midpoint, not the order-arrival price. Historical trades and rapid fills may lack a benchmark.",
+  openCostHelp:
+    "Costs allocated to the remaining open FIFO lots. Net P&L is calculated from matched execution prices and subtracts opening commission once. Broker average cost may already include fees; the broker P&L is not reduced again. Missing entry history or currency conversion leaves net P&L unavailable.",
+  entryCommission: "Opening commission",
+  exitCommission: "Closing commission",
+  partialCost: "Partial data",
+  costHistoryHelp:
+    "Costs cover the imported executions in the date range shown, not all lifetime account activity. Amounts use account currency. Totals require complete commission and quote coverage.",
+  grossExecutionPnl: "P&L before commission",
+  netUnavailableHelp:
+    "Net P&L is unavailable because commission currency or its conversion is missing.",
+
   accountMenu: "Account menu",
   noAlerts: "No unread active alerts.",
   ackHint: "Select to mark as read",
@@ -239,6 +264,31 @@ export const en = {
 export type Key = keyof typeof en;
 export const uz: Record<Key, string> = {
   ...en,
+  executionCosts: "Savdo xarajatlari",
+  commissionCost: "Komissiya",
+  slippageCost: "O‘lchangan slippage",
+  totalExecutionCost: "Jami savdo xarajati",
+  netExecutionPnl: "Komissiyadan keyingi P&L",
+  costCoverage: "Narx bilan qamrov",
+  costMissing: "Ma’lumot yetarli emas",
+  costRecords: "Olingan executionlar",
+  costEquity: "joriy kapitalga nisbatan",
+  costExplanation: "Xarajatlar P&L’ga qanday ta’sir qiladi?",
+  costHelp:
+    "Komissiya daromadni kamaytiradi. Slippage bajarilgan narxni undan oldin qayd etilgan bid/ask o‘rtacha narxi bilan solishtiradi: musbat — xarajat, manfiy — yaxshiroq narx. Slippage bajarilgan narxda allaqachon aks etgan; P&L yoki broker kapitalidan qayta ayirilmaydi.",
+  benchmarkHelp:
+    "Worker va Gateway ishlaganda narxlar har 10 soniyada avtomatik qayd etiladi. Faqat executiondan oldin olingan, 30 soniyadan eski bo‘lmagan real vaqt narxi ishlatiladi. Bu sampled pre-fill midpoint; order yuborilgan paytdagi narx emas. Eski savdo yoki tez bajarilgan orderda solishtirish narxi bo‘lmasligi mumkin.",
+  openCostHelp:
+    "Xarajatlar FIFO bo‘yicha qolgan ochiq lotlarga ajratilgan. Sof P&L execution narxlari asosida hisoblanadi va ochilish komissiyasi bir marta ayiriladi. Broker o‘rtacha tannarxida komissiya bo‘lishi mumkin; broker P&L’dan qayta ayirilmaydi. Ochilish tarixi yoki valyuta kursi yetishmasa, sof P&L ko‘rsatilmaydi.",
+  entryCommission: "Ochilish komissiyasi",
+  exitCommission: "Yopilish komissiyasi",
+  partialCost: "Qisman ma’lumot",
+  costHistoryHelp:
+    "Xarajatlar ko‘rsatilgan davrda olingan executionlarni qamraydi, akkauntning butun tarixini emas. Summalar akkaunt valyutasida. Jami xarajat uchun komissiya va narx qamrovi to‘liq bo‘lishi kerak.",
+  grossExecutionPnl: "Komissiyagacha P&L",
+  netUnavailableHelp:
+    "Komissiya valyutasi yoki uni aylantirish kursi yetishmagani uchun sof P&L ko‘rsatilmaydi.",
+
   accountMenu: "Akkaunt menyusi",
   noAlerts: "O‘qilmagan faol ogohlantirishlar yo‘q.",
   ackHint: "O‘qilgan deb belgilash uchun tanlang",

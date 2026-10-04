@@ -63,6 +63,7 @@ model Account {
   trades            Trade[]
   scenarios         Scenario[]
   alerts            Alert[]
+  executions        Execution[]
 
   @@unique([userId, brokerId, mode])
 }
@@ -128,6 +129,7 @@ model Scenario {
 }
 
 model Trade {
+  currency String?
   id         String   @id @default(cuid())
   accountId  String
   account    Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
@@ -140,6 +142,11 @@ model Trade {
   multiplier Float    @default(1)
   fx         Float    @default(1)
   fees       Float    @default(0)
+  feesKnown  Boolean  @default(true)
+  entryFee   Float?
+  exitFee    Float?
+  slippage   Float?
+  slippageCoverage Float @default(0)
   openedAt   DateTime
   closedAt   DateTime
   reason     String   @default("unknown")
@@ -174,14 +181,20 @@ model Audit {
 }
 
 model Execution {
+  currency String?
   id         String   @id @default(cuid())
   accountId  String
+  account    Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
   externalId String
   conid      String
   symbol     String
   quantity   Float
   price      Float
   fees       Float
+  feeCurrency String?
+  feeFx      Float?
+  benchmarkPrice Float?
+  benchmarkAt DateTime?
   multiplier Float
   fx         Float
   at         DateTime
@@ -189,4 +202,17 @@ model Execution {
 
   @@unique([accountId, externalId])
   @@index([accountId, conid, at])
+}
+
+model MarketQuote {
+  id String @id @default(cuid())
+  accountId String
+  conid String
+  bid Float
+  ask Float
+  at DateTime
+  observedAt DateTime
+
+  @@unique([accountId, conid, observedAt])
+  @@index([accountId, conid, observedAt])
 }

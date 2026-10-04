@@ -1603,8 +1603,47 @@ select {
   height: 280px;
 }
 
+.dashboard-kpis {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  gap: 16px;
+}
 .dashboard-kpis .metric {
-  border-top: 3px solid var(--blue);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  min-height: 148px;
+  gap: 12px;
+}
+.dashboard-kpis .metric > span:first-child {
+  font-size: 13px;
+  font-weight: 500;
+}
+.dashboard-kpis .metric > strong {
+  font-size: clamp(18px, 2.2vw, 28px);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.dashboard-kpis .kpi-help {
+  margin: 0;
+}
+.dashboard-kpis .kpi-limit {
+  margin-top: 0;
+  font-size: 11px;
+}
+@media (max-width: 640px) {
+  .dashboard-kpis {
+    gap: 10px;
+  }
+  .dashboard-kpis .metric {
+    padding: 14px;
+    min-height: 148px;
+    gap: 10px;
+  }
 }
 .kpi-help {
   font-size: 12px;
@@ -1902,5 +1941,262 @@ select {
   }
   .automatic-sync-grid {
     grid-template-columns: 1fr;
+  }
+}
+.history-filter-fields > label:first-child {
+  grid-column: 1 / -1;
+}
+.costs-panel {
+  margin-block: 20px;
+}
+.costs-panel h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.costs-panel .panel-heading > span {
+  font-size: 12px;
+}
+.cost-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.cost-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.cost-metric > span,
+.cost-metric > small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.cost-metric > strong {
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.cost-help {
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.cost-help summary {
+  cursor: pointer;
+  width: fit-content;
+}
+.cost-help p,
+.position-costs p,
+.trade-costs p {
+  font-size: 12px;
+  line-height: 1.65;
+}
+.cost-cell small {
+  white-space: nowrap;
+}
+.position-costs {
+  margin-block: 20px;
+  padding-block: 16px;
+  border-block: 1px solid var(--border);
+}
+.position-costs .cost-metrics {
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.position-costs .cost-metric:last-child {
+  grid-column: 1 / -1;
+}
+.trade-costs {
+  border-block: 1px solid var(--border);
+  padding-block: 18px;
+}
+.trade-costs .cost-metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+@media (max-width: 640px) {
+  .costs-panel .panel-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .costs-panel .cost-metrics {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .costs-panel .cost-metric {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px 12px;
+  }
+  .costs-panel .cost-metric > small {
+    grid-column: 1 / -1;
+  }
+  .trade-costs .cost-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.position-drawer .drawer-close {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+}
+.position-drawer .drawer-close:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+.drawer-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 16px;
+  margin-top: 6px;
+  border-top: 1px solid var(--border);
+}
+.position-drawer .drawer-save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 8px;
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}
+.value-help {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  min-width: 0;
+}
+.value-help:not(.with-help-icon) {
+  display: inline-block;
+}
+.value-help:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+button.help-trigger {
+  padding: 0;
+  border: 0;
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
+  flex-shrink: 0;
+  color: var(--muted);
+  background: transparent;
+  border-radius: 50%;
+}
+button.help-trigger:hover {
+  background: var(--soft);
+  color: var(--text);
+}
+.value-tooltip {
+  position: fixed;
+  z-index: 100;
+  width: min(300px, calc(100vw - 24px));
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 28px #0002;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.65;
+  white-space: normal;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.dashboard-kpis .metric > .value-help:first-child {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.dashboard-kpis .metric > .value-help > strong {
+  font-size: clamp(18px, 2.2vw, 28px);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.analysis-card > .value-help:first-child,
+.trade-risk-summary > div > .value-help:first-child,
+.cost-metric > .value-help:first-child {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.cost-metric > .value-help > strong {
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+.cost-cell {
+  display: block;
+}
+.position-drawer .panel-heading {
+  margin-bottom: 12px;
+}
+.metric > .value-help > strong {
+  font-size: 28px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+button.help-trigger {
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+}
+.dashboard-kpis .metric {
+  min-height: 122px;
+  justify-content: flex-start;
+}
+.dashboard-kpis .metric > .value-help > strong {
+  font-size: clamp(18px, 2.2vw, 28px);
+  white-space: normal;
+}
+@media (max-width: 640px) {
+  .dashboard-kpis .metric {
+    min-height: 122px;
+  }
+  .metric > .value-help > strong {
+    font-size: 23px;
+  }
+}
+.metric > .value-help > strong:not(.positive):not(.negative) {
+  color: var(--text);
+}
+.dashboard-main > section:first-child {
+  display: flex;
+  flex-direction: column;
+}
+.dashboard-main > section:first-child .chart {
+  flex: 1;
+  min-height: 300px;
+}
+@media (max-width: 900px) {
+  .dashboard-main > section:first-child .chart {
+    flex: initial;
+    height: 280px;
+    min-height: 280px;
   }
 }

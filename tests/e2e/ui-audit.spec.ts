@@ -334,3 +334,101 @@ test("large alert lists paginate and read alerts remain available", async ({
     ).violations.map((v) => v.id),
   ).toEqual([]);
 });
+
+test("value explanations work with hover, keyboard and touch without opening position rows", async ({
+  page,
+}) => {
+  await page.request.post("/api/login", {
+    headers: { Origin: origin },
+    data: {
+      username: process.env.SEED_USERNAME ?? "admin",
+      password: process.env.SEED_PASSWORD,
+    },
+  });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/dashboard");
+  await expect(page.locator(".dashboard-kpis .kpi-help")).toHaveCount(0);
+  const help = page.locator(".dashboard-kpis .help-trigger").first();
+  await help.hover();
+  await expect(page.getByRole("tooltip")).toContainText(/liquidation|kapitali/);
+  await help.focus();
+  await help.press("Escape");
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
+  await page.goto("/portfolio");
+  await page.getByRole("cell", { name: "NVDA NVIDIA Corp." }).click();
+  const drawer = page.getByRole("dialog");
+  await expect(drawer.locator(".drawer-close")).toBeVisible();
+  await expect(drawer.locator(".drawer-close")).toHaveText("");
+  await expect(drawer.locator(".position-costs")).toContainText(
+    /commission|Komissiya/,
+  );
+  await drawer.locator(".drawer-close").click();
+  await expect(drawer).toHaveCount(0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/dashboard");
+  await page.locator(".dashboard-kpis .help-trigger").first().click();
+  const bounds = await page.getByRole("tooltip").boundingBox();
+  expect(bounds!.x).toBeGreaterThanOrEqual(0);
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
+  await expect(page.getByRole("tooltip")).toBeVisible();
+  expect(
+    (
+      await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+        .analyze()
+    ).violations.map((v) => v.id),
+  ).toEqual([]);
+});
+
+test("compact table tools filter rows, reset criteria and export filtered results", async ({
+  page,
+}) => {
+  await page.request.post("/api/login", {
+    headers: { Origin: origin },
+    data: {
+      username: process.env.SEED_USERNAME ?? "admin",
+      password: process.env.SEED_PASSWORD,
+    },
+  });
+  await page.goto("/portfolio");
+  await page
+    .getByRole("button", { name: /Filters|Filtrlar/, exact: true })
+    .click();
+  const filters = page.getByRole("dialog");
+  await filters
+    .getByLabel(/Side|Yo‘nalish/, { exact: true })
+    .selectOption("short");
+  await filters.locator(".filter-footer .primary").click();
+  await expect(page.locator("tbody > tr")).toHaveCount(1);
+  await expect(page.getByRole("cell", { name: /XOM/ })).toBeVisible();
+  const download = page.waitForEvent("download");
+  await page
+    .getByRole("button", {
+      name: /Export CSV|CSV eksport|CSV chiqarish/,
+      exact: true,
+    })
+    .click();
+  expect((await download).suggestedFilename()).toBe("portfolio.csv");
+  await page
+    .getByRole("button", { name: /Filters|Filtrlar/, exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: /Clear|Tozalash/, exact: true })
+    .click();
+  await page.getByRole("dialog").locator(".filter-footer .primary").click();
+  await expect(page.locator("tbody > tr")).toHaveCount(5);
+  await page.goto("/history");
+  await page
+    .getByRole("button", { name: /Filters|Filtrlar/, exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByLabel(/Reason|Sabab/, { exact: true })
+    .selectOption("stop_loss");
+  await page.getByRole("dialog").locator(".filter-footer .primary").click();
+  await expect(page.locator("tbody > tr")).toHaveCount(1);
+  await expect(
+    page.getByRole("cell", { name: "AMD", exact: true }),
+  ).toBeVisible();
+});

@@ -1,4 +1,5 @@
 "use client";
+import { ValueHelp } from "./ValueHelp";
 import Link from "next/link";
 import * as Dropdown from "@radix-ui/react-dropdown-menu";
 import {
@@ -41,7 +42,11 @@ export function Scenarios({
                 "maxTradeRisk",
                 "totalDrawdown",
               ].map((k) => (
-                <th key={k}>{t(k as Key)}</th>
+                <th key={k}>
+                  <ValueHelp label={t(k as Key)} icon>
+                    {t(k as Key)}
+                  </ValueHelp>
+                </th>
               ))}
               <th />
             </tr>
@@ -68,7 +73,17 @@ export function Scenarios({
                   />
                 </td>
                 {[s.maxHeat, s.maxTradeRisk, s.totalDrawdown].map((v, i) => (
-                  <td key={i}>{percent(v)}</td>
+                  <td key={i}>
+                    <ValueHelp
+                      label={t(
+                        (["maxHeat", "maxTradeRisk", "totalDrawdown"] as const)[
+                          i
+                        ],
+                      )}
+                    >
+                      {percent(v)}
+                    </ValueHelp>
+                  </td>
                 ))}
                 <td>
                   <Dropdown.Root modal={false}>
@@ -304,8 +319,11 @@ export function ScenarioEditor({
         )}
         {fields[tab]?.map((k) => (
           <label key={k}>
-            {t(k)}
+            <ValueHelp label={t(k)} icon>
+              {t(k)}
+            </ValueHelp>
             <input
+              aria-label={t(k)}
               type="number"
               step="0.01"
               min="0.01"
@@ -331,24 +349,28 @@ export function ScenarioEditor({
         )}
         {tab === "sectorsTab" && (
           <label>
-            {t("sectorLimits")}
+            <ValueHelp label={t("sectorLimits")} icon help={t("limitsHelp")}>
+              {t("sectorLimits")}
+            </ValueHelp>
             <textarea
+              aria-label={t("sectorLimits")}
               value={sectorText}
               placeholder="Technology=35"
               onChange={(e) => setSectorText(e.target.value)}
             />
-            <small>{t("limitsHelp")}</small>
           </label>
         )}
         {tab === "allocationTab" && (
           <label>
-            {t("assetLimits")}
+            <ValueHelp label={t("assetLimits")} icon help={t("limitsHelp")}>
+              {t("assetLimits")}
+            </ValueHelp>
             <textarea
+              aria-label={t("assetLimits")}
               value={assetText}
               placeholder="STK=80"
               onChange={(e) => setAssetText(e.target.value)}
             />
-            <small>{t("limitsHelp")}</small>
           </label>
         )}
         {tab === "alertsTab" && (

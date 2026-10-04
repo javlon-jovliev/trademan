@@ -1,13 +1,21 @@
 "use client";
+import { ValueHelp } from "./ValueHelp";
 import { useState, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import Link from "next/link";
-import { SlidersHorizontal, X, Download } from "lucide-react";
+import {
+  SlidersHorizontal,
+  X,
+  Download,
+  Check,
+  LoaderCircle,
+} from "lucide-react";
 import { DateTime, dateKey } from "./DateTime";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { State, TradeDTO } from "./types";
 import { type T, type Action, money, percent, Badge, Metric } from "./Platform";
 import { DataTable } from "./DataTable";
+import { CostCell, CostMetric, CostsPanel, PositionCosts } from "./Costs";
 import { Candles } from "./Candles";
 import { postExit } from "@/risk/engine";
 type Row = NonNullable<State["risk"]>["rows"][number];
@@ -128,8 +136,7 @@ export function Portfolio({
         <span title={row.original.heat === null ? t("noStop") : undefined}>
           {percent(row.original.heat)}
           <small>
-            {percent(policy?.maxTradeRisk)}{" "}
-            {t("maxTradeRisk").replace(" %", "")}
+            {t("limitLabel")}: {percent(policy?.maxTradeRisk)}
           </small>
         </span>
       ),
@@ -138,6 +145,22 @@ export function Portfolio({
       id: "status",
       header: t("scenario"),
       cell: ({ row }) => <Badge status={status(row.original)} t={t} />,
+    },
+    {
+      id: "costs",
+      header: t("executionCosts"),
+      cell: ({ row }) => {
+        const c = data.costs?.positions[row.original.id];
+        return (
+          <CostCell
+            commission={c?.commission ?? null}
+            slippage={c?.slippage ?? null}
+            coverage={c?.coverage ?? 0}
+            t={t}
+            currency={currency}
+          />
+        );
+      },
     },
     { accessorKey: "sector", header: t("sector") },
   ];
@@ -151,6 +174,7 @@ export function Portfolio({
         />
         <Metric label={t("heat")} value={percent(risk.heat)} />
       </div>
+      <CostsPanel data={data} t={t} />
       <div className="tabs">
         <Link className="active" href="/portfolio">
           {t("openPositions")}
@@ -261,7 +285,21 @@ export function Portfolio({
               className="table-tool icon-button"
               aria-label={t("export")}
               title={t("export")}
-              onClick={() => exportCSV(rows, "portfolio.csv")}
+              onClick={() =>
+                exportCSV(
+                  rows.map((p) => ({
+                    ...p,
+                    commission: data.costs?.positions[p.id]?.commission ?? null,
+                    measuredSlippage:
+                      data.costs?.positions[p.id]?.slippage ?? null,
+                    slippageCoverage:
+                      data.costs?.positions[p.id]?.coverage ?? 0,
+                    netExecutionPnl:
+                      data.costs?.positions[p.id]?.netPnl ?? null,
+                  })),
+                  "portfolio.csv",
+                )
+              }
             >
               <Download size={17} />
             </button>
@@ -295,8 +333,13 @@ export function Portfolio({
                 <Dialog.Title asChild>
                   <h2>{selected.symbol}</h2>
                 </Dialog.Title>
-                <button autoFocus onClick={() => setSelected(null)}>
-                  {t("close")}
+                <button
+                  className="icon-button drawer-close"
+                  aria-label={t("close")}
+                  title={t("close")}
+                  onClick={() => setSelected(null)}
+                >
+                  <X size={19} />
                 </button>
               </div>
               <p>{selected.name}</p>
@@ -315,11 +358,20 @@ export function Portfolio({
                   ["sectorLimit", percent(risk.sectors[selected.sector])],
                 ].map(([key, v]) => (
                   <div className="dl-row" key={key}>
-                    <dt>{t(key as Parameters<T>[0])}</dt>
-                    <dd>{v}</dd>
+                    <dt>
+                      <ValueHelp icon label={t(key as Parameters<T>[0])}>
+                        {t(key as Parameters<T>[0])}
+                      </ValueHelp>
+                    </dt>
+                    <dd>
+                      <ValueHelp label={t(key as Parameters<T>[0])}>
+                        {v}
+                      </ValueHelp>
+                    </dd>
                   </div>
                 ))}
               </dl>
+              <PositionCosts data={data} positionId={selected.id} t={t} />
               <form
                 onSubmit={async (e) => {
                   e.preventDefault();
@@ -339,8 +391,11 @@ export function Portfolio({
                 }}
               >
                 <label>
-                  {t("riskStop")}
+                  <ValueHelp label={t("riskStop")} icon>
+                    {t("riskStop")}
+                  </ValueHelp>
                   <input
+                    aria-label={t("riskStop")}
                     name="stop"
                     type="number"
                     step="any"
@@ -362,9 +417,16 @@ export function Portfolio({
                     {saveError}
                   </p>
                 )}
-                <button className="primary" disabled={saving}>
-                  {t(saving ? "loading" : "save")}
-                </button>
+                <div className="drawer-actions">
+                  <button className="primary drawer-save" disabled={saving}>
+                    {saving ? (
+                      <LoaderCircle size={16} className="spin" />
+                    ) : (
+                      <Check size={16} />
+                    )}
+                    {t(saving ? "loading" : "save")}
+                  </button>
+                </div>
               </form>
             </Dialog.Content>
           </Dialog.Portal>
@@ -416,12 +478,14 @@ export function HistoryPage({
     {
       accessorKey: "entry",
       header: t("entry"),
-      cell: ({ getValue }) => money(getValue() as number, currency),
+      cell: ({ row, getValue }) =>
+        money(getValue() as number, row.original.currency ?? currency),
     },
     {
       accessorKey: "exit",
       header: t("exit"),
-      cell: ({ getValue }) => money(getValue() as number, currency),
+      cell: ({ row, getValue }) =>
+        money(getValue() as number, row.original.currency ?? currency),
     },
     {
       id: "pnl",
@@ -431,6 +495,19 @@ export function HistoryPage({
         <span className={(getValue() as number) < 0 ? "negative" : "positive"}>
           {money(getValue() as number, currency)}
         </span>
+      ),
+    },
+    {
+      id: "costs",
+      header: t("executionCosts"),
+      cell: ({ row }) => (
+        <CostCell
+          commission={row.original.feesKnown ? row.original.fees : null}
+          slippage={row.original.slippage}
+          coverage={row.original.slippageCoverage}
+          t={t}
+          currency={currency}
+        />
       ),
     },
     {
@@ -466,7 +543,7 @@ export function HistoryPage({
               setTo("");
             }}
           >
-            <div className="filter-fields">
+            <div className="filter-fields history-filter-fields">
               <label>
                 {t("reason")}
                 <select
@@ -610,7 +687,7 @@ function TradeDetails({
     .sort((a, b) => a.time.localeCompare(b.time))
     .at(-1);
   const scale = Math.max(
-    Math.abs(metrics.realized),
+    Math.abs(metrics.realized ?? 0),
     Math.abs(metrics.hypothetical ?? 0),
     1,
   );
@@ -631,15 +708,23 @@ function TradeDetails({
           const value = metrics[key];
           return (
             <div className="analysis-card" key={key}>
-              <span>{t(key)}</span>
-              <strong
-                className={
-                  value == null ? "muted" : value >= 0 ? "positive" : "negative"
-                }
-              >
-                {money(value, currency)}
-              </strong>
-              <p>{t(`${key}Help`)}</p>
+              <ValueHelp label={t(key)} icon>
+                {t(key)}
+              </ValueHelp>
+              <ValueHelp label={t(key)}>
+                <strong
+                  className={
+                    value == null
+                      ? "muted"
+                      : value >= 0
+                        ? "positive"
+                        : "negative"
+                  }
+                >
+                  {money(value, currency)}
+                </strong>
+              </ValueHelp>
+
               {key !== "missed" && value != null && (
                 <div className="comparison-track" aria-hidden="true">
                   <div
@@ -655,14 +740,57 @@ function TradeDetails({
       <div className="trade-risk-summary">
         {secondary.map((key) => (
           <div key={key}>
-            <span>{t(key)}</span>
-            <strong>{money(metrics[key], currency)}</strong>
-            <p>{t(`${key}Help`)}</p>
+            <ValueHelp label={t(key)} icon>
+              {t(key)}
+            </ValueHelp>
+            <ValueHelp label={t(key)}>
+              <strong>{money(metrics[key], currency)}</strong>
+            </ValueHelp>
           </div>
         ))}
       </div>
+      <section className="trade-costs">
+        <h3>
+          <ValueHelp label={t("executionCosts")} icon>
+            {t("executionCosts")}
+          </ValueHelp>
+        </h3>
+        <div className="cost-metrics">
+          <CostMetric
+            label={t("entryCommission")}
+            value={trade.entryFee}
+            currency={currency}
+          />
+          <CostMetric
+            label={t("exitCommission")}
+            value={trade.exitFee}
+            currency={currency}
+          />
+          <CostMetric
+            label={t("slippageCost")}
+            value={trade.slippage}
+            currency={currency}
+            help={`${t("costCoverage")}: ${percent(trade.slippageCoverage)}`}
+          />
+          <CostMetric
+            label={t("totalExecutionCost")}
+            value={
+              trade.feesKnown &&
+              trade.slippageCoverage >= 99.999999 &&
+              trade.slippage !== null
+                ? trade.fees + trade.slippage
+                : null
+            }
+            currency={currency}
+          />
+        </div>
+      </section>
       <div className="trade-chart-heading">
-        <h3>{t("priceHistory")}</h3>
+        <h3>
+          <ValueHelp label={t("priceHistory")} icon help={t("postExitHelp")}>
+            {t("priceHistory")}
+          </ValueHelp>
+        </h3>
         <span className="muted">{trade.symbol}</span>
       </div>
       <div className="chart-legend">
@@ -691,7 +819,6 @@ function TradeDetails({
       ) : (
         <div className="chart-empty">{t("chartNoData")}</div>
       )}
-      <p className="trade-data-help muted">{t("postExitHelp")}</p>
     </div>
   );
 }

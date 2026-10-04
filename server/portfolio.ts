@@ -10,6 +10,7 @@ export async function accountFor(userId: string) {
     where: { userId, mode: demoMode() ? "demo" : "live" },
     include: {
       positions: true,
+      executions: true,
       scenarios: { orderBy: { updatedAt: "desc" } },
       snapshots: { orderBy: { at: "asc" } },
       trades: { orderBy: { closedAt: "desc" } },
@@ -151,18 +152,29 @@ export async function syncHistory(accountId: string) {
   });
   if (account.mode === "demo") return;
   try {
-    const fills = await fetchFlex(account.brokerId);
-    await db.$transaction(
-      fills.map((f) =>
-        db.execution.upsert({
-          where: {
-            accountId_externalId: { accountId, externalId: f.externalId },
-          },
-          create: { accountId, ...f },
-          update: f,
-        }),
-      ),
-    );
+    const fills = await fetchFlex(account.brokerId, account.currency);
+    // Preserve a prior benchmark if a later report falls outside quote retention.
+    for (const f of fills) {
+      const quote = await db.marketQuote.findFirst({
+        where: {
+          accountId,
+          conid: f.conid,
+          observedAt: { lt: f.at, gte: new Date(+f.at - 30000) },
+          at: { lt: f.at, gte: new Date(+f.at - 30000) },
+        },
+        orderBy: { observedAt: "desc" },
+      });
+      const benchmark = quote
+        ? { benchmarkPrice: (quote.bid + quote.ask) / 2, benchmarkAt: quote.at }
+        : {};
+      await db.execution.upsert({
+        where: {
+          accountId_externalId: { accountId, externalId: f.externalId },
+        },
+        create: { accountId, ...f, ...benchmark },
+        update: { ...f, ...benchmark },
+      });
+    }
     const all = await db.execution.findMany({ where: { accountId } });
     const trades = matchLots(all);
     await db.$transaction(
@@ -190,6 +202,23 @@ export async function syncHistory(accountId: string) {
     });
     throw Error("Flex history sync failed");
   }
+}
+
+export async function syncQuotes(accountId: string) {
+  const account = await db.account.findUniqueOrThrow({
+    where: { id: accountId },
+    include: { positions: true },
+  });
+  if (account.mode !== "live") return;
+  const quotes = await new IBKRAdapter().quotes(
+    account.brokerId,
+    account.positions.map((p) => p.conid),
+  );
+  if (quotes.length)
+    await db.marketQuote.createMany({
+      data: quotes.map((q) => ({ accountId, ...q })),
+      skipDuplicates: true,
+    });
 }
 
 export async function syncBars(accountId: string) {

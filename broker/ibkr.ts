@@ -53,6 +53,66 @@ export class IBKRAdapter implements BrokerAdapter {
       .parse(await this.get("/iserver/auth/status"));
     return auth.authenticated && auth.connected;
   }
+  async quotes(accountId: string, positionConids: string[]) {
+    // Do not switch the Gateway's active account or submit/modify orders.
+    await this.get("/iserver/accounts");
+    const response = z
+      .object({
+        orders: z.array(
+          z.object({
+            acct: z.string(),
+            conid: z.union([z.string(), z.number()]),
+            remainingQuantity: number,
+          }),
+        ),
+      })
+      .parse(await this.get("/iserver/account/orders"));
+    const conids = [
+      ...new Set([
+        ...positionConids,
+        ...response.orders
+          .filter((o) => o.acct === accountId && o.remainingQuantity > 0)
+          .map((o) => String(o.conid)),
+      ]),
+    ].filter((id) => /^\d+$/.test(id));
+    const quotes: {
+      conid: string;
+      bid: number;
+      ask: number;
+      at: Date;
+      observedAt: Date;
+    }[] = [];
+    for (let offset = 0; offset < conids.length; offset += 50) {
+      const ids = conids.slice(offset, offset + 50);
+      const raw = z
+        .array(z.record(z.string(), z.unknown()))
+        .parse(
+          await this.get(
+            `/iserver/marketdata/snapshot?${new URLSearchParams({ conids: ids.join(","), fields: "84,86,6509" })}`,
+          ),
+        );
+      const observedAt = new Date();
+      for (const q of raw) {
+        const conid = String(q.conid),
+          bid = Number(q["84"]),
+          ask = Number(q["86"]),
+          at = new Date(Number(q._updated));
+        if (
+          ids.includes(conid) &&
+          String(q["6509"]).startsWith("R") &&
+          bid > 0 &&
+          ask >= bid &&
+          Number.isFinite(ask) &&
+          Number.isFinite(+at) &&
+          +at <= +observedAt &&
+          +observedAt - +at <= 15000
+        )
+          quotes.push({ conid, bid, ask, at, observedAt });
+      }
+      // The initial pre-flight response may contain no prices. The next polling cycle retries it.
+    }
+    return quotes;
+  }
   async history(conid: string, options: { from?: Date; to?: Date } = {}) {
     if (!/^\d+$/.test(conid)) throw Error("Invalid contract ID");
     const cursor = new Date(options.to ?? new Date());

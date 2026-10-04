@@ -1,4 +1,5 @@
 "use client";
+import { ValueHelp } from "./ValueHelp";
 import { useState } from "react";
 import type { State } from "./types";
 import type { T, Action } from "./Platform";
@@ -50,8 +51,11 @@ export function SettingsPage({
             <div className="form-grid">
               {(["username", "email", "timezone"] as const).map((k) => (
                 <label key={k}>
-                  {t(k)}
+                  <ValueHelp label={t(k)} icon>
+                    {t(k)}
+                  </ValueHelp>
                   <input
+                    aria-label={t(k)}
                     value={form[k]}
                     onChange={(e) => setForm({ ...form, [k]: e.target.value })}
                     required
@@ -79,7 +83,9 @@ export function SettingsPage({
                 </select>
               </label>
               <label>
-                {t("baseCurrency")}
+                <ValueHelp label={t("baseCurrency")} icon>
+                  {t("baseCurrency")}
+                </ValueHelp>
                 <select
                   aria-label={t("baseCurrency")}
                   value={form.baseCurrency}

@@ -19,6 +19,7 @@ import {
 import { scenarioSchema } from "@/server/validation";
 import { sendTelegram } from "@/notifications/telegram";
 import { evaluate } from "@/risk/engine";
+import { executionCosts } from "@/risk/costs";
 import { parseCSV, tradeImport, barImport } from "@/server/imports";
 export const runtime = "nodejs";
 export async function GET(req: NextRequest) {
@@ -62,6 +63,7 @@ export async function GET(req: NextRequest) {
               }
             : {}),
           positions: undefined,
+          executions: undefined,
         }
       : null,
     risk: usable
@@ -69,6 +71,7 @@ export async function GET(req: NextRequest) {
       : null,
     demo: demoMode(),
     stale: Boolean(stale),
+    costs: account ? executionCosts(account.executions, account.positions, usable?.nlv ?? null) : null,
     path: req.nextUrl.pathname,
   });
 }

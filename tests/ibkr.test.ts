@@ -74,12 +74,10 @@ it("paginates daily history backwards with fixed UTC windows and deduplicates", 
     { data: [bar("2026-01-01"), bar("2025-11-01")] },
     { data: [bar("2025-01-01"), bar("2025-11-01")] },
   ];
-  const mock = vi
-    .fn()
-    .mockImplementation(async () => ({
-      ok: true,
-      json: async () => payloads.shift(),
-    }));
+  const mock = vi.fn().mockImplementation(async () => ({
+    ok: true,
+    json: async () => payloads.shift(),
+  }));
   vi.stubGlobal("fetch", mock);
   const bars = await new IBKRAdapter().history("123", {
     from: new Date("2024-12-01"),
@@ -105,4 +103,60 @@ it("fails on denied historical data instead of inventing prices", async () => {
     vi.fn(async () => ({ ok: false, status: 403 })),
   );
   await expect(new IBKRAdapter().history("123")).rejects.toThrow("403");
+});
+
+it("captures only owned contracts with fresh real-time bid/ask quotes and never changes orders", async () => {
+  vi.stubEnv("IBKR_GATEWAY_URL", "https://localhost:5000/v1/api");
+  const updated = Date.now() - 1000;
+  const payloads = [
+    {},
+    {
+      orders: [
+        { acct: "U1", conid: 2, remainingQuantity: 1 },
+        { acct: "U2", conid: 99, remainingQuantity: 1 },
+      ],
+    },
+    [
+      { conid: 1, "84": "99", "86": "101", "6509": "RpB", _updated: updated },
+      { conid: 2, "84": "99", "86": "101", "6509": "DpB", _updated: updated },
+      { conid: 99, "84": "99", "86": "101", "6509": "RpB", _updated: updated },
+    ],
+  ];
+  const fetcher = vi.fn(async () => ({
+    ok: true,
+    json: async () => payloads.shift(),
+  }));
+  vi.stubGlobal("fetch", fetcher);
+  const q = await new IBKRAdapter().quotes("U1", ["1"]);
+  expect(q.map((v) => v.conid)).toEqual(["1"]);
+  expect(
+    fetcher.mock.calls.every(
+      (call: unknown[]) => (call[1] as { method: string }).method === "GET",
+    ),
+  ).toBe(true);
+});
+it("ignores crossed, frozen, future and stale quotes and accepts pre-flight without prices", async () => {
+  vi.stubEnv("IBKR_GATEWAY_URL", "https://localhost:5000/v1/api");
+  const now = Date.now();
+  const quote = {
+    conid: 1,
+    "84": "99",
+    "86": "101",
+    "6509": "RpB",
+    _updated: now - 1000,
+  };
+  for (const raw of [
+    [{ ...quote, "84": "102" }],
+    [{ ...quote, "6509": "ZpB" }],
+    [{ ...quote, _updated: now + 10000 }],
+    [{ ...quote, _updated: now - 60000 }],
+    [{ conid: 1 }],
+  ]) {
+    const payloads = [{}, { orders: [] }, raw];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: true, json: async () => payloads.shift() })),
+    );
+    expect(await new IBKRAdapter().quotes("U1", ["1"])).toEqual([]);
+  }
 });

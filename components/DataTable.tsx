@@ -1,5 +1,6 @@
 "use client";
 /* eslint-disable react-hooks/incompatible-library -- TanStack Table is intentionally not React Compiler memoized. */
+import { ValueHelp } from "./ValueHelp";
 import type { T } from "./Platform";
 import { useState, Fragment } from "react";
 import {
@@ -59,18 +60,30 @@ export function DataTable<T>({
                           : "none"
                     }
                   >
-                    {h.column.getCanSort() ? (
-                      <button onClick={h.column.getToggleSortingHandler()}>
-                        {flexRender(h.column.columnDef.header, h.getContext())}
-                        {h.column.getIsSorted() === "asc"
-                          ? " ↑"
-                          : h.column.getIsSorted() === "desc"
-                            ? " ↓"
-                            : ""}
-                      </button>
-                    ) : (
-                      flexRender(h.column.columnDef.header, h.getContext())
-                    )}
+                    <ValueHelp
+                      label={
+                        typeof h.column.columnDef.header === "string"
+                          ? h.column.columnDef.header
+                          : undefined
+                      }
+                      icon
+                    >
+                      {h.column.getCanSort() ? (
+                        <button onClick={h.column.getToggleSortingHandler()}>
+                          {flexRender(
+                            h.column.columnDef.header,
+                            h.getContext(),
+                          )}
+                          {h.column.getIsSorted() === "asc"
+                            ? " ↑"
+                            : h.column.getIsSorted() === "desc"
+                              ? " ↓"
+                              : ""}
+                        </button>
+                      ) : (
+                        flexRender(h.column.columnDef.header, h.getContext())
+                      )}
+                    </ValueHelp>
                   </th>
                 ))}
               </tr>
@@ -83,7 +96,10 @@ export function DataTable<T>({
                   tabIndex={onRow ? 0 : undefined}
                   onClick={() => onRow?.(r.original)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
+                    if (
+                      e.target === e.currentTarget &&
+                      (e.key === "Enter" || e.key === " ")
+                    ) {
                       e.preventDefault();
                       onRow?.(r.original);
                     }
@@ -91,7 +107,15 @@ export function DataTable<T>({
                 >
                   {r.getVisibleCells().map((c) => (
                     <td key={c.id}>
-                      {flexRender(c.column.columnDef.cell, c.getContext())}
+                      <ValueHelp
+                        label={
+                          typeof c.column.columnDef.header === "string"
+                            ? c.column.columnDef.header
+                            : undefined
+                        }
+                      >
+                        {flexRender(c.column.columnDef.cell, c.getContext())}
+                      </ValueHelp>
                     </td>
                   ))}
                 </tr>

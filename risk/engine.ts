@@ -303,6 +303,7 @@ export function postExit(
     exit: number;
     entry: number;
     fees: number;
+    feesKnown?: boolean;
     multiplier: number;
     fx: number;
     closedAt: Date | string;
@@ -313,7 +314,10 @@ export function postExit(
     (b) => b.time > new Date(trade.closedAt).toISOString().slice(0, 10),
   );
   const factor = trade.quantity * trade.multiplier * trade.fx;
-  const realized = (trade.exit - trade.entry) * factor - trade.fees;
+  const realized =
+    trade.feesKnown === false
+      ? null
+      : (trade.exit - trade.entry) * factor - trade.fees;
   if (!after.length)
     return {
       realized,
@@ -324,7 +328,9 @@ export function postExit(
       maxDrawdown: null,
     };
   const hypothetical =
-    (after.at(-1)!.close - trade.entry) * factor - trade.fees;
+    trade.feesKnown === false
+      ? null
+      : (after.at(-1)!.close - trade.entry) * factor - trade.fees;
   const changes = after.flatMap((b) => [
     (b.low - trade.exit) * factor,
     (b.high - trade.exit) * factor,
@@ -341,7 +347,10 @@ export function postExit(
   return {
     realized,
     hypothetical,
-    missed: hypothetical - realized,
+    missed:
+      hypothetical !== null && realized !== null
+        ? hypothetical - realized
+        : null,
     mae: Math.min(0, ...changes),
     mfe: Math.max(0, ...changes),
     maxDrawdown: dd,

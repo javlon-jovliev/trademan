@@ -17,6 +17,8 @@ const fillSchema = z.object({
   quantity: num.refine((v) => v !== 0),
   tradePrice: num.positive(),
   ibCommission: num,
+  currency: z.string().optional(),
+  ibCommissionCurrency: z.string().optional(),
   multiplier: num.positive(),
   fxRateToBase: num.positive(),
   dateTime: z.string(),
@@ -28,7 +30,11 @@ function parse(xml: string) {
     throw Error("Unsafe or oversized Flex XML");
   return parser.parse(xml);
 }
-export function parseFlex(xml: string, accountId: string): Fill[] {
+export function parseFlex(
+  xml: string,
+  accountId: string,
+  baseCurrency?: string,
+): Fill[] {
   const doc = parse(xml);
   const statements = doc.FlexQueryResponse?.FlexStatements?.FlexStatement;
   if (!Array.isArray(statements)) throw Error("Invalid Flex statement");
@@ -46,9 +52,17 @@ export function parseFlex(xml: string, accountId: string): Fill[] {
         externalId: v.tradeID,
         conid: v.conid,
         symbol: v.symbol,
+        currency: v.currency ?? null,
         quantity: v.quantity,
         price: v.tradePrice,
-        fees: Math.abs(v.ibCommission),
+        fees: -v.ibCommission,
+        feeCurrency: v.ibCommissionCurrency || null,
+        feeFx:
+          v.ibCommissionCurrency && v.ibCommissionCurrency === baseCurrency
+            ? 1
+            : v.ibCommissionCurrency && v.ibCommissionCurrency === v.currency
+              ? v.fxRateToBase
+              : null,
         multiplier: v.multiplier,
         fx: v.fxRateToBase,
         at: new Date(`${at[1]}-${at[2]}-${at[3]}T${at[4]}:${at[5]}:${at[6]}Z`),
@@ -58,7 +72,7 @@ export function parseFlex(xml: string, accountId: string): Fill[] {
   }
   return fills;
 }
-export async function fetchFlex(accountId: string) {
+export async function fetchFlex(accountId: string, baseCurrency?: string) {
   const token = process.env.IBKR_FLEX_TOKEN,
     query = process.env.IBKR_FLEX_QUERY_ID;
   if (!token || !query) throw Error("Configure IBKR Flex token and query ID");
@@ -84,7 +98,8 @@ export async function fetchFlex(accountId: string) {
     await new Promise((r) => setTimeout(r, 3000));
     const xml = await get("GetStatement", { q: reference });
     const response = parse(xml);
-    if (response.FlexQueryResponse) return parseFlex(xml, accountId);
+    if (response.FlexQueryResponse)
+      return parseFlex(xml, accountId, baseCurrency);
     if (
       !["1019", "1009"].includes(
         String(response.FlexStatementResponse?.ErrorCode),

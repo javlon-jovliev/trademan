@@ -76,3 +76,43 @@ export function DateTime({
     </time>
   );
 }
+
+export function dateLabel(
+  value: string,
+  timeZone: string,
+  language: "uz" | "en",
+) {
+  if (!Number.isFinite(+new Date(value))) return "—";
+  const [year, month, day] = dateKey(value, timeZone).split("-");
+  const months =
+    language === "uz"
+      ? [
+          "yan",
+          "fev",
+          "mar",
+          "apr",
+          "may",
+          "iyun",
+          "iyul",
+          "avg",
+          "sen",
+          "okt",
+          "noy",
+          "dek",
+        ]
+      : [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ];
+  return `${Number(day)} ${months[Number(month) - 1]} ${year}`;
+}
