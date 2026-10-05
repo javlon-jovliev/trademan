@@ -1,5 +1,6 @@
+import "dotenv/config";
 import { db, demoMode } from "../server/db";
-import { IBKRAdapter } from "../broker/ibkr";
+import { createBrokerAdapter } from "../broker/factory";
 import { syncAccount } from "../server/portfolio";
 
 async function main() {
@@ -17,7 +18,7 @@ async function main() {
   });
   if (!existing) {
     // Verify ownership before connecting a new account for the first time.
-    await new IBKRAdapter().snapshot(brokerId);
+    await createBrokerAdapter().snapshot(brokerId);
   }
   const account =
     existing ??
@@ -29,7 +30,7 @@ async function main() {
   } catch (error) {
     if (!existing) throw error;
     console.log(
-      "Account retained; complete daily IBKR browser login to resume sync",
+      "Account retained; complete IBKR Gateway login to resume sync",
     );
     return;
   }
@@ -38,7 +39,7 @@ async function main() {
 main()
   .catch(() => {
     console.error(
-      "Live sync failed. Check IBKR browser login and configured account.",
+      "Live sync failed. Check IBKR Gateway login and configured account.",
     );
     process.exitCode = 1;
   })

@@ -1,0 +1,4 @@
+# Install Caddy on the Ubuntu host; replace this hostname with your domain.
+trademan.example.com {
+    reverse_proxy 127.0.0.1:3000
+}

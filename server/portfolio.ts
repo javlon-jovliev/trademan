@@ -1,7 +1,7 @@
 import { riskAlertText } from "../risk/messages";
 import { db, demoMode } from "./db";
 import { evaluate } from "../risk/engine";
-import { IBKRAdapter } from "../broker/ibkr";
+import { createBrokerAdapter } from "../broker/factory";
 import { fetchFlex } from "../broker/flex";
 import { matchLots } from "../broker/lots";
 import { sendTelegram } from "../notifications/telegram";
@@ -96,7 +96,7 @@ export async function syncAccount(id: string) {
     return;
   }
   try {
-    const snapshot = await new IBKRAdapter().snapshot(account.brokerId);
+    const snapshot = await createBrokerAdapter().snapshot(account.brokerId);
     await db.$transaction(async (tx) => {
       await tx.account.update({
         where: { id },
@@ -210,7 +210,7 @@ export async function syncQuotes(accountId: string) {
     include: { positions: true },
   });
   if (account.mode !== "live") return;
-  const quotes = await new IBKRAdapter().quotes(
+  const quotes = await createBrokerAdapter().quotes(
     account.brokerId,
     account.positions.map((p) => p.conid),
   );
@@ -227,7 +227,7 @@ export async function syncBars(accountId: string) {
   });
   if (account.mode === "demo") return;
   const trades = await db.trade.findMany({ where: { accountId } });
-  const broker = new IBKRAdapter();
+  const broker = createBrokerAdapter();
   let failures = trades.filter((t) => !t.conid).length;
   for (const conid of [
     ...new Set(trades.flatMap((t) => (t.conid ? [t.conid] : []))),

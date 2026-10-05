@@ -1,0 +1,78 @@
+# Standalone production stack: docker compose --env-file .env.production -f compose.production.yaml ...
+x-app: &app
+  build: .
+  image: trademan:local
+  env_file: .env.production
+  environment: &app-env
+    NODE_ENV: production
+    DEMO_MODE: "false"
+    DATABASE_URL: postgresql://erta:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@db:5432/erta
+    IBKR_ADAPTER: ${IBKR_ADAPTER:-tws}
+    IBKR_TWS_BRIDGE_URL: http://tws-bridge:8000
+  security_opt: [no-new-privileges:true]
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "3" }
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: erta
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      POSTGRES_DB: erta
+    volumes: [postgres:/var/lib/postgresql/data]
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U erta -d erta]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  migrate:
+    <<: *app
+    command: [pnpm, db:migrate]
+    depends_on:
+      db: { condition: service_healthy }
+    restart: "no"
+  bootstrap:
+    <<: *app
+    profiles: [bootstrap]
+    command: [pnpm, db:seed]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+  connect:
+    <<: *app
+    profiles: [bootstrap]
+    command: [pnpm, exec, tsx, scripts/connect-live.ts]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      tws-bridge: { condition: service_started }
+  web:
+    <<: *app
+    ports: [127.0.0.1:3000:3000]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    restart: unless-stopped
+  worker:
+    <<: *app
+    command: [pnpm, worker]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    restart: unless-stopped
+    stop_grace_period: 90s
+  tws-bridge:
+    build: services/tws-bridge
+    environment:
+      IBKR_ACCOUNT_ID: ${IBKR_ACCOUNT_ID:?Set IBKR_ACCOUNT_ID}
+      IBKR_TWS_BRIDGE_TOKEN: ${IBKR_TWS_BRIDGE_TOKEN:?Set IBKR_TWS_BRIDGE_TOKEN}
+      IBKR_TWS_HOST: ${IBKR_TWS_HOST:-host.docker.internal}
+      IBKR_TWS_PORT: ${IBKR_TWS_PORT:-4002}
+      IBKR_TWS_CLIENT_ID: ${IBKR_TWS_CLIENT_ID:-71}
+    extra_hosts: [host.docker.internal:host-gateway]
+    # Internal service only. Never publish the TWS socket or bridge to the Internet.
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+volumes:
+  postgres:
