@@ -24,4 +24,18 @@ export type BrokerSnapshot = {
 };
 export interface BrokerAdapter {
   snapshot(accountId: string): Promise<BrokerSnapshot>;
+  connectionStatus(): Promise<boolean>;
+  keepAlive(): Promise<void>;
+  quotes(
+    accountId: string,
+    conids: string[],
+  ): Promise<
+    { conid: string; bid: number; ask: number; at: Date; observedAt: Date }[]
+  >;
+  history(
+    conid: string,
+    options?: { from?: Date; to?: Date },
+  ): Promise<
+    { time: string; open: number; high: number; low: number; close: number }[]
+  >;
 }

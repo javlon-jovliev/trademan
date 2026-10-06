@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { currentUser } from "@/server/auth";
 import { accountFor } from "@/server/portfolio";
 import { demoMode } from "@/server/db";
-import { IBKRAdapter } from "@/broker/ibkr";
+import { createBrokerAdapter } from "@/broker/factory";
 export const runtime = "nodejs";
 const cache = new Map<string, { checkedAt: number; connected: boolean }>();
 export async function GET() {
@@ -26,7 +26,7 @@ export async function GET() {
   if (!result || Date.now() - result.checkedAt > 15000) {
     let connected = false;
     try {
-      connected = await new IBKRAdapter().connectionStatus();
+      connected = await createBrokerAdapter().connectionStatus();
     } catch {
       /* Unavailable Gateway is a disconnected state. */
     }

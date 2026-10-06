@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { db, demoMode } from "../server/db";
-import { IBKRAdapter } from "../broker/ibkr";
+import { createBrokerAdapter } from "../broker/factory";
 import {
   syncAccount,
   syncHistory,
@@ -94,7 +94,7 @@ async function keepAliveLoop() {
   let failed = false;
   while (!stopped) {
     try {
-      await new IBKRAdapter().keepAlive();
+      await createBrokerAdapter().keepAlive();
       failed = false;
     } catch {
       if (!failed)

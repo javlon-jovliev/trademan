@@ -30,6 +30,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate && pnpm db:migrate && pnpm db:seed
       - run: pnpm lint && pnpm typecheck && pnpm test && pnpm build
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python services/tws-bridge/install-sdk.py
+      - run: pip install ./services/tws-bridge/vendor/ibapi
+      - run: python -m unittest discover -s services/tws-bridge -p 'test_*.py'
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
       - run: pnpm audit:performance

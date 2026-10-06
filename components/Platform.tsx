@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useSessionActivity } from "./useSessionActivity";
 import {
   LayoutDashboard,
   Briefcase,
@@ -74,6 +75,7 @@ export function Badge({ status, t }: { status: string; t: T }) {
   );
 }
 export default function Platform({ route }: { route: string }) {
+  useSessionActivity();
   const router = useRouter();
   const [data, setData] = useState<State | null>(null);
   const [error, setError] = useState("");

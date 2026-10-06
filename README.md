@@ -111,7 +111,7 @@ Create a bot through BotFather, start a chat with it, and set `TELEGRAM_BOT_TOKE
 
 ## Security
 
-Argon2id passwords; random 256-bit session tokens with only SHA-256 digests stored in PostgreSQL; seven-day database sessions; HTTP-only SameSite=Lax cookies, secure in live production; exact-origin CSRF checks for mutations; database-backed per-username login attempt limiting; user/account scoping on all portfolio mutations; server-side input validation; password changes revoke every prior session. Do not commit credentials or expose the PGlite development socket. Configure a reverse-proxy IP rate limit for internet deployments, alongside the account limiter. No trading endpoints or broker order submission are implemented.
+Argon2id passwords; random 256-bit session tokens with only SHA-256 digests stored in PostgreSQL; sessions expire after 30 minutes without user interaction or at most 5 hours after login; only trusted visible-page input renews the idle deadline (throttled to 30 seconds), never background polling; HTTP-only SameSite=Lax cookies, secure in live production; exact-origin CSRF checks for mutations; database-backed per-username login attempt limiting; user/account scoping on all portfolio mutations; server-side input validation; password changes revoke every prior session. Do not commit credentials or expose the PGlite development socket. Configure a reverse-proxy IP rate limit for internet deployments, alongside the account limiter. No trading endpoints or broker order submission are implemented.
 
 ## Verify
 
@@ -166,3 +166,16 @@ Ambiguous financial indicators have localized Uzbek/English explanations on hove
 Required private `.env.live` values: `DEMO_MODE=false`, `DATABASE_URL=postgresql://erta:<strong-password>@127.0.0.1:55433/erta_live`, `APP_ORIGIN=https://localhost:3443`, strong `SEED_PASSWORD`, `IBKR_ACCOUNT_ID`, `IBKR_GATEWAY_URL=https://localhost:5001/v1/api`, `LOCAL_TLS_CERT`, `LOCAL_TLS_KEY`, `NODE_EXTRA_CA_CERTS`, `LOCAL_JAVA`, and `LOCAL_GATEWAY_DIR`. Use absolute file paths for the official Gateway, Java runtime and a valid localhost certificate. Configure Gateway TLS with that certificate; restrict allowed IPs to loopback. The bootstrap passes the certificate trust variable before Node starts; it never disables TLS verification.
 
 Log in through the official Gateway browser on this Mac, with 2FA. IBKR requires daily reauthentication and does not support automated Gateway login. Once an account is connected, expired login does not prevent ERTA startup; the worker resumes synchronization after browser login. A separate once-per-minute Gateway keep-alive runs independently of slow Flex/history requests; it does not bypass daily authentication. Do not run multiple live launchers. Private logs are in `data/live-logs`; Ctrl+C gracefully stops owned services. Keep the Mac awake and the launcher running for updates; this is not an unattended 24/7 cloud deployment. Back up native PostgreSQL before updates. Never publish Gateway ports or local private keys. Flex credentials are additionally required for automatic execution history and commission analysis.
+
+## IB Gateway / TWS adapter and Hetzner deployment
+
+The existing Client Portal Web API path remains the default (`IBKR_ADAPTER=web`).
+Select `IBKR_ADAPTER=tws` to use the new read-only official-SDK bridge with IB
+Gateway or TWS. Flex remains the source of execution history and commissions.
+Prisma, risk, alerts, demo mode and UI formats remain unchanged.
+
+See [migration, local tests, production deployment and rollback](docs/ib-gateway-deployment.md).
+Use `compose.production.yaml` for the production stack and
+`deploy/production.env.example` for its configuration. Gateway GUI login and 2FA
+remain manual operator steps on the Ubuntu host. The bridge requires staging the
+pinned official SDK with `python3 services/tws-bridge/install-sdk.py` before building.
