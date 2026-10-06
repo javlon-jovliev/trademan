@@ -25,6 +25,7 @@ model User {
 }
 
 model Session {
+  createdAt DateTime @default(now())
   id        String   @id
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

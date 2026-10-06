@@ -111,7 +111,7 @@ Create a bot through BotFather, start a chat with it, and set `TELEGRAM_BOT_TOKE
 
 ## Security
 
-Argon2id passwords; random 256-bit session tokens with only SHA-256 digests stored in PostgreSQL; seven-day database sessions; HTTP-only SameSite=Lax cookies, secure in live production; exact-origin CSRF checks for mutations; database-backed per-username login attempt limiting; user/account scoping on all portfolio mutations; server-side input validation; password changes revoke every prior session. Do not commit credentials or expose the PGlite development socket. Configure a reverse-proxy IP rate limit for internet deployments, alongside the account limiter. No trading endpoints or broker order submission are implemented.
+Argon2id passwords; random 256-bit session tokens with only SHA-256 digests stored in PostgreSQL; sessions expire after 30 minutes without user interaction or at most 5 hours after login; only trusted visible-page input renews the idle deadline (throttled to 30 seconds), never background polling; HTTP-only SameSite=Lax cookies, secure in live production; exact-origin CSRF checks for mutations; database-backed per-username login attempt limiting; user/account scoping on all portfolio mutations; server-side input validation; password changes revoke every prior session. Do not commit credentials or expose the PGlite development socket. Configure a reverse-proxy IP rate limit for internet deployments, alongside the account limiter. No trading endpoints or broker order submission are implemented.
 
 ## Verify
 

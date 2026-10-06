@@ -3,6 +3,7 @@ import { hash, verify, argon2id } from "argon2";
 import { z, ZodError } from "zod";
 import {
   currentUser,
+  renewSession,
   issueSession,
   loginAllowed,
   logoutSession,
@@ -71,7 +72,13 @@ export async function GET(req: NextRequest) {
       : null,
     demo: demoMode(),
     stale: Boolean(stale),
-    costs: account ? executionCosts(account.executions, account.positions, usable?.nlv ?? null) : null,
+    costs: account
+      ? executionCosts(
+          account.executions,
+          account.positions,
+          usable?.nlv ?? null,
+        )
+      : null,
     path: req.nextUrl.pathname,
   });
 }
@@ -113,6 +120,13 @@ export async function POST(
       });
       await issueSession(user.id);
       return NextResponse.json({ ok: true });
+    }
+    if (route === "session/activity") {
+      const ok = await renewSession();
+      return NextResponse.json(ok ? { ok: true } : { error: "Unauthorized" }, {
+        status: ok ? 200 : 401,
+        headers: { "Cache-Control": "no-store" },
+      });
     }
     const user = await currentUser();
     if (!user)
